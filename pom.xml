@@ -22,7 +22,7 @@
 
   <groupId>xerces</groupId>
   <artifactId>xercesImpl</artifactId>
-  <version>2.12.3</version>
+  <version>2.12.3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Xerces2-J</name>
@@ -66,6 +66,7 @@
     <!-- Values substituted into the generated sources and the jar manifest. -->
     <xerces.name>Xerces-J</xerces.name>
     <xerces.shortname>xerces</xerces.shortname>
+    <!-- Used for the directory inside the source/binary distributions. -->
     <xerces.version.underscored>2_12_3</xerces.version.underscored>
     <VERSION>${xerces.name} ${project.version}</VERSION>
     <impl.name>${xerces.name} ${project.version}</impl.name>

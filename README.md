@@ -69,9 +69,10 @@ target/xercesImpl-javadoc.jar
 ```
 
 The file names in `target/` follow the Ant-style `finalName`. When the
-artifacts are installed or deployed, Maven adds the version automatically:
-`xercesImpl-2.12.3.jar`, `xercesImpl-2.12.3-samples.jar`,
-`xercesImpl-2.12.3-sources.jar` and `xercesImpl-2.12.3-javadoc.jar`.
+artifacts are installed or deployed, Maven adds the project version and
+classifier automatically, for example `xercesImpl-<version>.jar`,
+`xercesImpl-<version>-samples.jar`, `xercesImpl-<version>-sources.jar`
+and `xercesImpl-<version>-javadoc.jar`.
 
 To compile and run the JUnit tests, use `./mvnw verify` (`./mvnw test`
 skips packaging).
@@ -92,14 +93,15 @@ combined, for example `-Pdocs,javadocs`.
 | Ant target | Maven profile | Result |
 | --- | --- | --- |
 | `jars` | `-Pjars` | `target/xercesImpl.jar`, `xercesImpl-samples.jar` and the third-party jars |
-| `dtdjars` | `-Pdtd` | `target/dtd-xercesImpl.jar` || `dvjar` | `-Pdv` | `target/xercesDV.jar` |
+| `dtdjars` | `-Pdtd` | `target/dtd-xercesImpl.jar` |
+| `dvjar` | `-Pdv` | `target/xercesDV.jar` |
 | `jars-schema11` | `-Pschema11` | `target/schema11-xercesImpl.jar` |
 | `xjavac-jar` | `-Pxjavac` | `target/xjavac.jar` |
 | `deprecatedjars` | `-Pdeprecated` | `target/xerces.jar` |
 | `docs` | `-Pdocs` | `target/docs/` |
 | `javadocs` | `-Pjavadocs` | `target/docs/javadocs/` |
-| `pack-src` | `-Ppack-src` | `target/Xerces-J-src.2.12.3.{zip,tar.gz}` |
-| `pack-tools` | `-Ppack-tools` | `target/Xerces-J-tools.2.12.3.{zip,tar.gz}` |
+| `pack-src` | `-Ppack-src` | `target/Xerces-J-src.<version>.{zip,tar.gz}` |
+| `pack-tools` | `-Ppack-tools` | `target/Xerces-J-tools.<version>.{zip,tar.gz}` |
 | `all` | `-Pdist` | source, binary and tools archives |
 | `deprecatedall` | `-Pdeprecated-dist` | deprecated binary archive |
 
