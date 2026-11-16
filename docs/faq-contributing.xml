@@ -104,7 +104,11 @@
             packages in the <code>target</code> directory. Run the build
             on both Windows and Unix (or at least check the
             <code>.tar.gz</code> packages on Unix) so that the packaged
-            documentation does not pick up stray 0x0d characters.
+            documentation does not pick up stray 0x0d characters.<br/>
+            Build with JDK 8 through 19 if the release is to keep the
+            Java 7 class file version. JDK 20 and later can no longer
+            compile for Java 7 and the build automatically targets
+            Java 8 instead.
         </li>
         <li>
             Generate PGP/GNUPG signatures for dist binaries:<br/>

@@ -41,12 +41,14 @@ classifier automatically, for example `xercesImpl-<version>.jar`,
 To compile and run the JUnit tests, use `./mvnw verify` (`./mvnw test` skips
 packaging).
 
-The Maven build targets Java 8 by default because current JDKs (20 and
-later) can no longer target Java 7. On JDK 19 or earlier you can target
-Java 7 with:
+Like the Ant build it replaces, the Maven build targets Java 7 by default, so
+the generated jars run on the same JVMs as the previous releases. JDK 20 and
+later can no longer compile for Java 7, so on those JDKs the default is raised
+to Java 8 automatically. Pass `-Djavac.source` and `-Djavac.target` to pick a
+level explicitly, for example to produce Java 8 class files from JDK 17:
 
 ```
-./mvnw clean package -Djavac.source=1.7 -Djavac.target=1.7
+./mvnw clean package -Djavac.source=1.8 -Djavac.target=1.8
 ```
 
 ### Source layout

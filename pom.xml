@@ -54,13 +54,16 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!--
-      The former Ant build defaulted javac.source/javac.target to 1.7. JDK 20
-      and later cannot target 7 anymore, so 1.8 is the lowest language level
-      that works on a current JDK. On an older JDK you can still target 7 with
-      -Djavac.source=1.7 -Djavac.target=1.7.
+      The former Ant build defaulted javac.source/javac.target to 1.7, and
+      that is what the released jars target: xercesImpl.jar 2.12.2 contains
+      Java 7 class files (major version 51). Keep 1.7 as the default so a
+      build on JDK 8 through 19 produces the same bytecode as before.
+      JDK 20 and later dropped -source/-target 7, so the jdk20-plus profile
+      below raises the default to 1.8 on those JDKs. Command-line values
+      always win, for example -Djavac.source=1.8 -Djavac.target=1.8.
     -->
-    <javac.source>1.8</javac.source>
-    <javac.target>1.8</javac.target>
+    <javac.source>1.7</javac.source>
+    <javac.target>1.7</javac.target>
 
     <!-- Values substituted into the generated sources and the jar manifest. -->
     <xerces.name>Xerces-J</xerces.name>
@@ -616,6 +619,24 @@
        Optional builds. Activate with -P<id>.
        ===================================================================== -->
   <profiles>
+
+  <!--
+    JDK 20 removed -source/-target 7, so on those JDKs the 1.7 default is
+    raised to 1.8 automatically. The former Ant CI did the same thing with
+    an explicit -Djavac.source/-Djavac.target override for its newer JDK
+    entries. Command-line -Djavac.source / -Djavac.target still win over
+    both defaults.
+  -->
+  <profile>
+    <id>jdk20-plus</id>
+    <activation>
+      <jdk>[20,)</jdk>
+    </activation>
+    <properties>
+      <javac.source>1.8</javac.source>
+      <javac.target>1.8</javac.target>
+    </properties>
+  </profile>
 
   <!-- dtdjars: the DTD-flavoured parser jar. -->
   <profile>
