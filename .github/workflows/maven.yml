@@ -48,8 +48,13 @@ jobs:
     - name: Maven build and tests
       run: ./mvnw -B verify
 
+  # The release archives are built on JDK 17 on purpose: it is the newest JDK
+  # that still accepts -source/-target 7, and the POM targets Java 7 by
+  # default so the jars keep the class file version of the previous releases.
+  # On JDK 20 or later that default is raised to Java 8 automatically.
+  # Bump this JDK only when the project deliberately raises the Java target.
   dist:
-    name: Build distributions with Maven
+    name: Build distributions with Maven on Java 17
     runs-on: ubuntu-latest
 
     steps:
