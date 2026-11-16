@@ -64,7 +64,14 @@ The results are:
 ```
 target/xercesImpl.jar
 target/xercesImpl-samples.jar
+target/xercesImpl-sources.jar
+target/xercesImpl-javadoc.jar
 ```
+
+The file names in `target/` follow the Ant-style `finalName`. When the
+artifacts are installed or deployed, Maven adds the version automatically:
+`xercesImpl-2.12.3.jar`, `xercesImpl-2.12.3-samples.jar`,
+`xercesImpl-2.12.3-sources.jar` and `xercesImpl-2.12.3-javadoc.jar`.
 
 To compile and run the JUnit tests, use `./mvnw verify` (`./mvnw test`
 skips packaging).

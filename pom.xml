@@ -242,6 +242,16 @@
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.8.1</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.12.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -335,6 +345,51 @@
               <sources>
                 <source>${project.basedir}/samples</source>
               </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Attach the standard -sources and -javadoc classifier artifacts so
+        that install/deploy publishes a normal Maven artifact set. The
+        distribution builds use their own Ant-flavoured javadoc sets.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <configuration>
+              <!-- Only the parser sources belong in the main sources jar. -->
+              <includes>
+                <include>org/apache/**/*.java</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <source>${javac.source}</source>
+              <doclint>none</doclint>
+              <quiet>true</quiet>
+              <failOnError>false</failOnError>
             </configuration>
           </execution>
         </executions>
