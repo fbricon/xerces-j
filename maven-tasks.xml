@@ -16,15 +16,16 @@
   limitations under the License.
 -->
 <!--
-  Maven-specific ports of the optional build.xml targets.
+  Optional build tasks (documentation, javadocs and distributions) that do not
+  map cleanly onto a single Maven plugin.
 
-  This file is only used by Maven profiles through maven-antrun-plugin. It is
-  deliberately separate from build.xml so that the Ant build keeps working
-  unchanged. All paths and versions are passed in as properties by the POM.
+  This file is only used by Maven profiles through maven-antrun-plugin. All
+  paths and versions are passed in as properties by the POM, so the targets can
+  be read in isolation.
 
-  The targets here mirror build.xml, with two intentional bug fixes called out
-  in the comments: the binary distribution gets its NOTICE and DOM licenses,
-  and the shipped javadocs include the XML Schema API set.
+  The targets were ported from the former Ant build, with two intentional bug
+  fixes called out in the comments: the binary distribution gets its NOTICE and
+  DOM licenses, and the shipped javadocs include the XML Schema API set.
 -->
 <project name="xerces-maven-tasks" basedir="." default="usage">
 
@@ -32,7 +33,7 @@
   <!-- Documentation                                                       -->
   <!-- =================================================================== -->
 
-  <!-- Mirrors build.xml's prepare-docs. -->
+  <!-- Prepare the docs tree for the xdocs transformation. -->
   <target name="prepare-docs">
     <mkdir dir="${xerces.build.dir}/docs"/>
     <delete dir="${xerces.build.dir}/xdocs"/>
@@ -52,7 +53,7 @@
              token="@@DEFAULT_CONFIG_LONG@@" value="${xerces.default.parser.config.qualified}"/>
   </target>
 
-  <!-- Mirrors build.xml's docs target. -->
+  <!-- Build the documentation site. -->
   <target name="docs" depends="prepare-docs">
     <echo message="Building docs for ${xerces.name} ${xerces.version} ..."/>
     <delete dir="${xerces.build.dir}/intermediate"/>
@@ -128,7 +129,7 @@
     </copy>
   </target>
 
-  <!-- Mirrors build.xml's javadoc-replace target. -->
+  <!-- Turn the @xerces.internal / @xerces.experimental markers into javadoc text. -->
   <target name="javadoc-replace">
     <replace token="@xerces.internal" dir="${xerces.gen.src}">
       <replacevalue><![CDATA[<dl><dt><strong>INTERNAL:</strong></dt><dd>Usage of this class is not supported. It may be altered or removed at any time.</dd></dl>]]></replacevalue>
@@ -138,7 +139,7 @@
     </replace>
   </target>
 
-  <!-- Mirrors build.xml's javadocs target. -->
+  <!-- Build the API, XNI, XML Schema, implementation and other javadoc sets. -->
   <target name="javadocs" depends="javadoc-replace">
     <delete dir="${xerces.build.dir}/docs/javadocs"/>
     <mkdir dir="${xerces.build.dir}/api-src"/>
@@ -239,7 +240,7 @@
   <!-- Jars                                                                -->
   <!-- =================================================================== -->
 
-  <!-- Mirrors build.xml's deprecatedjar target: the legacy omnibus jar.
+  <!-- The legacy omnibus jar.
        LICENSE and NOTICE are already in the compiled classes as resources,
        so no <metainf> element is needed here. Like the Ant build, this jar
        only contains what was compiled into the main classes directory; the
@@ -294,10 +295,6 @@
     <copy file="${xerces.basedir}/LICENSE.DOM-software.html"
           tofile="${distsrc.dir}/LICENSE.DOM-software.html"/>
     <copy file="${xerces.basedir}/README.md" tofile="${distsrc.dir}/README.md"/>
-    <copy file="${xerces.basedir}/build.xml" tofile="${distsrc.dir}/build.xml"/>
-    <copy file="${xerces.basedir}/build.sh" tofile="${distsrc.dir}/build.sh"/>
-    <chmod file="${distsrc.dir}/build.sh" perm="ugo+rx"/>
-    <copy file="${xerces.basedir}/build.bat" tofile="${distsrc.dir}/build.bat"/>
 
     <!-- Make the source distribution buildable with Maven out of the box. -->
     <copy file="${xerces.basedir}/pom.xml" tofile="${distsrc.dir}/pom.xml"/>
@@ -425,8 +422,8 @@
   <target name="deprecated-bin" depends="init-dist, docs, javadocs, pack-bin-common, deprecatedjars">
     <property name="distbin.dir" value="${xerces.build.dir}/dist-bin/${xerces.shortname}-${xerces.version.underscored}"/>
     <copy file="${xerces.build.dir}/xerces.jar" tofile="${distbin.dir}/xerces.jar"/>
-    <!-- Unlike build.xml, ship the XML APIs: the omnibus xerces.jar no longer
-         contains them, and the deprecated distribution needs them. -->
+    <!-- Unlike the former Ant build, ship the XML APIs: the omnibus xerces.jar
+         no longer contains them, and the deprecated distribution needs them. -->
     <copy file="${xerces.lib.dir}/xml-apis.jar" tofile="${distbin.dir}/xml-apis.jar"/>
     <copy file="${xerces.lib.dir}/resolver.jar" tofile="${distbin.dir}/resolver.jar"/>
     <copy file="${xerces.lib.dir}/serializer.jar" tofile="${distbin.dir}/serializer.jar"/>

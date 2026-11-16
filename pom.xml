@@ -686,7 +686,7 @@
   </build>
 
   <!-- =====================================================================
-       Optional builds from build.xml. Activate with -P<id>.
+       Optional builds. Activate with -P<id>.
        ===================================================================== -->
   <profiles>
 
@@ -1104,7 +1104,7 @@
   </profile>
 
   <!-- =====================================================================
-       Documentation. These map to build.xml's docs and javadocs targets.
+       Documentation, ported from the former Ant build.
        ===================================================================== -->
 
   <profile>
@@ -1222,7 +1222,7 @@
   </profile>
 
   <!-- =====================================================================
-       Distributions. These map to build.xml's pack-* and deprecated targets.
+       Distributions, ported from the former Ant build.
        The third-party jars are copied out of the local repository instead of
        the checked-in tools/*.jar files.
        ===================================================================== -->
