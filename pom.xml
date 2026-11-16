@@ -1,0 +1,1486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>xerces</groupId>
+  <artifactId>xercesImpl</artifactId>
+  <version>2.12.3</version>
+  <packaging>jar</packaging>
+
+  <name>Xerces2-J</name>
+  <description>
+    Xerces2 provides high performance, fully compliant XML parsers in the Apache
+    Xerces family. This new version of Xerces continues to build upon the Xerces
+    Native Interface (XNI), a complete framework for building parser components
+    and configurations that is extremely modular and easy to program.
+  </description>
+  <url>https://xerces.apache.org/xerces2-j/</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/apache/xerces-j</url>
+    <connection>scm:git:https://github.com/apache/xerces-j.git</connection>
+    <developerConnection>scm:git:git@github.com:apache/xerces-j.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!--
+      The Ant build defaults javac.source/javac.target to 1.7. JDK 20 and later
+      cannot target 7 anymore, so 1.8 is the lowest language level that works on
+      a current JDK. This matches the override used by the Ant CI build
+      (-Djavac.source=1.8 -Djavac.target=1.8). On an older JDK you can still
+      target 7 with -Djavac.source=1.7 -Djavac.target=1.7.
+    -->
+    <javac.source>1.8</javac.source>
+    <javac.target>1.8</javac.target>
+
+    <!-- Values substituted into the generated sources and the jar manifest. -->
+    <xerces.name>Xerces-J</xerces.name>
+    <xerces.shortname>xerces</xerces.shortname>
+    <xerces.version.underscored>2_12_3</xerces.version.underscored>
+    <VERSION>${xerces.name} ${project.version}</VERSION>
+    <impl.name>${xerces.name} ${project.version}</impl.name>
+    <impl.version>${project.version}</impl.version>
+
+    <!-- Documentation values, mirroring build.xml's init target. -->
+    <year>1999-2026</year>
+    <copyright>Copyright &#169; ${year} The Apache Software Foundation. All Rights Reserved.</copyright>
+    <default.parser.config.name>XIncludeAwareParserConfiguration</default.parser.config.name>
+    <default.parser.config.qualified>org.apache.xerces.parsers.XIncludeAwareParserConfiguration</default.parser.config.qualified>
+  </properties>
+
+  <dependencies>
+    <!-- The XML/SAX/DOM APIs. These are compiled against but not bundled. -->
+    <dependency>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>1.4.01</version>
+    </dependency>
+
+    <!-- Needed by org.apache.xerces.util.XMLCatalogResolver. -->
+    <dependency>
+      <groupId>xml-resolver</groupId>
+      <artifactId>xml-resolver</artifactId>
+      <version>1.2</version>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Kept at 4.10, like the Ant build, to avoid the hamcrest split. -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.10</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>xercesImpl</finalName>
+
+    <!--
+      The Ant build copies src/** through a filtering step (message bundle
+      duplication, @@VERSION@@ substitution in Version.java). The Maven build
+      does the same at generate-sources time; see the resources-plugin
+      executions below.
+    -->
+    <sourceDirectory>${project.build.directory}/generated-sources/main</sourceDirectory>
+    <testSourceDirectory>${project.basedir}/tests</testSourceDirectory>
+
+    <resources>
+      <!-- Message bundles, error resources and other classpath resources. -->
+      <resource>
+        <directory>${project.basedir}/src</directory>
+        <includes>
+          <include>**/*.properties</include>
+          <include>**/*.res</include>
+        </includes>
+      </resource>
+
+      <!-- The _en copies generated below by maven-antrun-plugin. -->
+      <resource>
+        <directory>${project.build.directory}/generated-resources</directory>
+      </resource>
+
+      <!--
+        Service registrations. In the source tree these live next to the
+        implementation classes (e.g. .../jaxp/javax.xml.parsers.DocumentBuilderFactory);
+        inside the jar they are META-INF/services entries. This is what the Ant
+        prepare-common and prepare-src targets do with explicit copies.
+      -->
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/jaxp</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>javax.xml.parsers.DocumentBuilderFactory</include>
+          <include>javax.xml.parsers.SAXParserFactory</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/jaxp/datatype</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>javax.xml.datatype.DatatypeFactory</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/jaxp/validation</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>javax.xml.validation.SchemaFactory</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/stax</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>javax.xml.stream.XMLEventFactory</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/parsers</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>org.xml.sax.driver</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/src/org/apache/xerces/dom</directory>
+        <targetPath>META-INF/services</targetPath>
+        <includes>
+          <include>org.w3c.dom.DOMImplementationSourceList</include>
+        </includes>
+      </resource>
+
+      <!-- LICENSE and NOTICE, as the Ant jar target adds them. -->
+      <resource>
+        <directory>${project.basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>LICENSE</include>
+          <include>NOTICE</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/tests</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.6.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.5.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.8.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${javac.source}</source>
+          <target>${javac.target}</target>
+          <encoding>${project.build.sourceEncoding}</encoding>
+          <debug>true</debug>
+          <debuglevel>lines,source</debuglevel>
+          <compilerArgs>
+            <arg>-Xlint:-options</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <!--
+            Copy the parser sources into the generated source tree, substituting
+            @@VERSION@@ in Version.java (the only @@ token in the tree), as Ant's
+            prepare-src target does.
+          -->
+          <execution>
+            <id>copy-java-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/generated-sources/main</outputDirectory>
+              <useDefaultDelimiters>false</useDefaultDelimiters>
+              <delimiters>
+                <delimiter>@@</delimiter>
+              </delimiters>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/src</directory>
+                  <includes>
+                    <include>org/apache/**/*.java</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+
+          <!-- Substitute @...@ tokens in the jar manifest. -->
+          <execution>
+            <id>filter-manifest</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/generated-manifest</outputDirectory>
+              <delimiters>
+                <delimiter>@</delimiter>
+              </delimiters>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/src</directory>
+                  <includes>
+                    <include>manifest.xerces</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Samples are compiled alongside the parser, as Ant's tests target does. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-sample-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/samples</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Ant creates English copies of the default (English) message bundles.
+        Maven cannot rename files while copying resources, so do those ten
+        copies here. This is the only Ant-flavoured step in the build.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-english-bundles</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy todir="${project.build.directory}/generated-resources/org/apache/xerces/impl/msg">
+                  <fileset dir="${project.basedir}/src/org/apache/xerces/impl/msg">
+                    <include name="DatatypeMessages.properties"/>
+                    <include name="DOMMessages.properties"/>
+                    <include name="JAXPValidationMessages.properties"/>
+                    <include name="SAXMessages.properties"/>
+                    <include name="XIncludeMessages.properties"/>
+                    <include name="XMLMessages.properties"/>
+                    <include name="XMLSchemaMessages.properties"/>
+                    <include name="XMLSerializerMessages.properties"/>
+                    <include name="XPointerMessages.properties"/>
+                  </fileset>
+                  <mapper type="glob" from="*.properties" to="*_en.properties"/>
+                </copy>
+                <copy file="${project.basedir}/src/org/apache/xerces/impl/xpath/regex/message.properties"
+                      tofile="${project.build.directory}/generated-resources/org/apache/xerces/impl/xpath/regex/message_en.properties"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <configuration>
+              <!-- The parser jar only contains the implementation packages. -->
+              <includes>
+                <include>org/apache/**</include>
+                <include>META-INF/**</include>
+              </includes>
+              <archive>
+                <manifestFile>${project.build.directory}/generated-manifest/manifest.xerces</manifestFile>
+                <addMavenDescriptor>false</addMavenDescriptor>
+                <manifestEntries>
+                  <Automatic-Module-Name>org.apache.xerces</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+
+          <!-- The samples jar, equivalent to Ant's xercesSamples.jar. -->
+          <execution>
+            <id>samples-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>samples</classifier>
+              <includes>
+                <include>dom/**</include>
+                <include>sax/**</include>
+                <include>jaxp/**</include>
+                <include>socket/**</include>
+                <include>ui/**</include>
+                <include>xni/**</include>
+                <include>xs/**</include>
+                <include>META-INF/LICENSE</include>
+                <include>META-INF/NOTICE</include>
+              </includes>
+              <archive>
+                <addMavenDescriptor>false</addMavenDescriptor>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        The Ant test target runs an explicit list of JUnit 3 style tests. Keep
+        that list rather than letting Surefire discover every class in tests/,
+        which also contains helpers and known-failing tests.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <configuration>
+              <includes>
+                <include>dom/DTest.java</include>
+                <include>dom/dom3/Test.java</include>
+                <include>dom/events/Test.java</include>
+                <include>dom/ids/Test.java</include>
+                <include>dom/mem/Test.java</include>
+                <include>dom/range/Test.java</include>
+                <include>dom/range/TestCompare.java</include>
+                <include>dom/registry/Test.java</include>
+                <include>dom/rename/Test.java</include>
+                <include>dom/serialization/Test.java</include>
+                <include>dom/serialize/TestDocumentTypeSerialization.java</include>
+                <include>dom/serialize/TestNS.java</include>
+                <include>dom/serialize/TestPreRootSerialization.java</include>
+                <include>dom/serialize/TestSerializeDOMIn.java</include>
+                <include>dom/traversal/*Test.java</include>
+                <include>dom/treewalker/TestFirstChild.java</include>
+                <include>idc/IDConstraintTests.java</include>
+                <include>io/UTF8.java</include>
+                <include>io/UTF16.java</include>
+                <include>jaxp/JAXPSpecTest.java</include>
+                <include>jaxp/PropertyTest.java</include>
+                <include>org/apache/xerces/dom/DeepNodeListTest.java</include>
+                <include>org/apache/xerces/jaxp/validation/SoftReferenceGrammarPoolTest.java</include>
+                <include>org/apache/xerces/util/URITest.java</include>
+                <include>org/apache/xml/serialize/TestHTMLSerializer.java</include>
+                <include>org/apache/xml/serialize/TestIgnorableWhitespaceSerialization.java</include>
+                <include>schema/Test.java</include>
+                <include>schema/annotations/*Test.java</include>
+                <include>schema/config/*Test.java</include>
+                <include>xinclude/*Test.java</include>
+              </includes>
+              <excludes>
+                <!-- Known failure, skipped by the Ant build as well. -->
+                <exclude>schema/config/UnparsedEntityCheckingTest.java</exclude>
+                <!-- Run in a fresh JVM below, like the separate Ant junit task. -->
+                <exclude>schema/config/SurrogatePairLengthTest.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+
+          <!--
+            SurrogatePairLengthTest flips a system property and depends on
+            running in a clean JVM; Ant runs it in a separate junit task.
+          -->
+          <execution>
+            <id>surrogate-pair-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>schema/config/SurrogatePairLengthTest.java</include>
+              </includes>
+              <reuseForks>false</reuseForks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- The smoke runs from the Ant test target. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>smoke-sax-counter</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>sax.Counter</argument>
+                <argument>${project.basedir}/data/personal.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>smoke-sax-writer</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>sax.Writer</argument>
+                <argument>${project.basedir}/data/personal.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>smoke-dom-counter</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>dom.Counter</argument>
+                <argument>${project.basedir}/data/personal.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>smoke-dom-writer</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>dom.Writer</argument>
+                <argument>${project.basedir}/data/personal.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>smoke-thread-dom</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>thread.Test</argument>
+                <argument>-dom</argument>
+                <argument>-threads</argument>
+                <argument>20</argument>
+                <argument>-time</argument>
+                <argument>10</argument>
+                <argument>${project.basedir}/data/personal-schema.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>smoke-thread-sax</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>thread.Test</argument>
+                <argument>-threads</argument>
+                <argument>20</argument>
+                <argument>-time</argument>
+                <argument>10</argument>
+                <argument>${project.basedir}/data/personal-schema.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!-- =====================================================================
+       Optional builds from build.xml. Activate with -P<id>.
+       ===================================================================== -->
+  <profiles>
+
+  <!-- dtdjars: the DTD-flavoured parser jar. -->
+  <profile>
+    <id>dtd</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>dtdjars</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <property name="dtd.dir" value="${project.build.directory}/dtd"/>
+                  <delete dir="${dtd.dir}"/>
+                  <mkdir dir="${dtd.dir}/src"/>
+                  <mkdir dir="${dtd.dir}/classes/META-INF/services"/>
+
+                  <!-- The CI build runs dtdjars on top of the main source tree. -->
+                  <copy todir="${dtd.dir}/src">
+                    <fileset dir="${project.build.directory}/generated-sources/main"
+                             includes="org/apache/**/*.java"/>
+                  </copy>
+
+                  <!-- Service registrations for the DTD jar. -->
+                  <copy file="${project.basedir}/src/org/apache/xerces/jaxp/javax.xml.parsers.DocumentBuilderFactory"
+                        tofile="${dtd.dir}/classes/META-INF/services/javax.xml.parsers.DocumentBuilderFactory"/>
+                  <copy file="${project.basedir}/src/org/apache/xerces/jaxp/javax.xml.parsers.SAXParserFactory"
+                        tofile="${dtd.dir}/classes/META-INF/services/javax.xml.parsers.SAXParserFactory"/>
+                  <copy file="${project.basedir}/src/org/apache/xerces/stax/javax.xml.stream.XMLEventFactory"
+                        tofile="${dtd.dir}/classes/META-INF/services/javax.xml.stream.XMLEventFactory"/>
+                  <copy file="${project.basedir}/src/org/apache/xerces/parsers/org.xml.sax.driver"
+                        tofile="${dtd.dir}/classes/META-INF/services/org.xml.sax.driver"/>
+                  <copy file="${project.basedir}/src/org/apache/xerces/parsers/org.apache.xerces.xni.parser.DTDConfiguration"
+                        tofile="${dtd.dir}/classes/META-INF/services/org.apache.xerces.xni.parser.XMLParserConfiguration"/>
+                  <copy file="${project.basedir}/src/org/apache/xerces/dom/org.apache.xerces.dom.DOMImplementationSourceImpl"
+                        tofile="${dtd.dir}/classes/META-INF/services/org.w3c.dom.DOMImplementationSourceList"/>
+
+                  <!-- Source rewrites from dtdprepare-src. -->
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="import org.apache.xerces.impl.dv.xs.XSSimpleTypeDecl;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="return ((XSSimpleTypeDecl) type).isDOMDerivedFrom(" value="return false;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="typeNamespaceArg, typeNameArg, derivationMethod);" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="XSSimpleTypeDecl" value="String"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="return ((String)type).getName();" value="return (String)type;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/AttrNSImpl.java" token="return ((String)type).getNamespace();" value="return null;"/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="import org.apache.xerces.impl.dv.xs.XSSimpleTypeDecl;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="import org.apache.xerces.impl.xs.XSComplexTypeDecl;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="transient XSTypeDefinition type;" value="transient Object type;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="type instanceof XSSimpleTypeDecl" value="type instanceof String"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="type instanceof XSComplexTypeDecl" value="type instanceof String"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="return ((XSSimpleTypeDecl) type).getTypeName();" value="return null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="return ((XSComplexTypeDecl) type).getTypeName();" value="return null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="return type.getNamespace();" value="return null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="return ((XSSimpleTypeDecl) type).isDOMDerivedFrom(" value="return false;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="return ((XSComplexTypeDecl) type).isDOMDerivedFrom(" value="return false;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/dom/ElementNSImpl.java" token="typeNamespaceArg, typeNameArg, derivationMethod);" value=""/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="import org.apache.xerces.impl.xs.opti.ElementImpl;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="(node instanceof ElementImpl)" value="(node == null)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="return ((ElementImpl)node).getAnnotation();" value="return null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="return ((ElementImpl)node).getSyntheticAnnotation();" value="return null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="(node instanceof org.apache.xerces.impl.xs.opti.NodeImpl)" value="(node == null)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="((org.apache.xerces.impl.xs.opti.NodeImpl)node).setReadOnly(true, false);" value="return;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="((org.apache.xerces.impl.xs.opti.NodeImpl)node).setReadOnly(false, false);" value="return;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/util/DOMUtil.java" token="return ((org.apache.xerces.impl.xs.opti.NodeImpl)node).getReadOnly();" value="return false;"/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="import org.apache.xerces.impl.xs.XMLSchemaValidator;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="import org.apache.xerces.jaxp.validation.XSGrammarPoolContainer;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="UnparsedEntityHandler fUnparsedEntityHandler" value="org.apache.xerces.xni.parser.XMLDTDFilter fUnparsedEntityHandler"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="this.grammar = spf.getSchema();" value="this.grammar = null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="(grammar != null)" value="(false)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="(grammar instanceof XSGrammarPoolContainer)" value="(grammar != null)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="new XMLSchemaValidator();" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="new UnparsedEntityHandler(fSchemaValidationManager);" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="new JAXPValidatorComponent(grammar.newValidatorHandler());" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="new SchemaValidatorConfiguration(config," value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="(XSGrammarPoolContainer) grammar, fSchemaValidationManager);" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserImpl.java" token="fSAXParser.fUnparsedEntityHandler.reset();" value=""/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="import org.apache.xerces.impl.xs.XMLSchemaValidator;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="import org.apache.xerces.jaxp.validation.XSGrammarPoolContainer;" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="UnparsedEntityHandler fUnparsedEntityHandler" value="org.apache.xerces.xni.parser.XMLDTDFilter fUnparsedEntityHandler"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="this.grammar = dbf.getSchema();" value="this.grammar = null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="(grammar != null)" value="(false)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="(grammar instanceof XSGrammarPoolContainer)" value="(grammar != null)"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="new XMLSchemaValidator();" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="new UnparsedEntityHandler(fSchemaValidationManager);" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="new JAXPValidatorComponent(grammar.newValidatorHandler());" value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="new SchemaValidatorConfiguration(config," value="null;"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="(XSGrammarPoolContainer) grammar, fSchemaValidationManager);" value=""/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderImpl.java" token="fUnparsedEntityHandler.reset();" value=""/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserFactoryImpl.java" token="return grammar;" value="throw new UnsupportedOperationException();"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/SAXParserFactoryImpl.java" token="this.grammar = grammar;" value="throw new UnsupportedOperationException();"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderFactoryImpl.java" token="return grammar;" value="throw new UnsupportedOperationException();"/>
+                  <replace file="${dtd.dir}/src/org/apache/xerces/jaxp/DocumentBuilderFactoryImpl.java" token="this.grammar = grammar;" value="throw new UnsupportedOperationException();"/>
+
+                  <replace file="${dtd.dir}/src/org/apache/xerces/parsers/AbstractSAXParser.java" token="return (fConfiguration instanceof XML11Configurable);" value="return false;"/>
+
+                  <copy todir="${dtd.dir}/classes">
+                    <fileset dir="${project.basedir}/src" includes="**/*.res, **/*.properties"/>
+                  </copy>
+                  <!-- The English message bundles created by the core build. -->
+                  <copy todir="${dtd.dir}/classes">
+                    <fileset dir="${project.build.directory}/generated-resources"/>
+                  </copy>
+
+                  <javac srcdir="${dtd.dir}/src" destdir="${dtd.dir}/classes"
+                         source="${javac.source}" target="${javac.target}"
+                         debug="true" debuglevel="lines,source"
+                         includeantruntime="false">
+                    <classpath>
+                      <pathelement location="${project.build.directory}/classes"/>
+                      <path refid="maven.compile.classpath"/>
+                    </classpath>
+                  </javac>
+
+                  <jar jarfile="${project.build.directory}/dtd-xercesImpl.jar"
+                       basedir="${dtd.dir}/classes"
+                       includes="org/apache/**, META-INF/**"
+                       manifest="${project.build.directory}/generated-manifest/manifest.xerces">
+                    <metainf dir="${project.basedir}" includes="LICENSE,NOTICE"/>
+                  </jar>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- dvjar: the standalone datatype jar. -->
+  <profile>
+    <id>dv</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>dvjar</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <property name="dv.dir" value="${project.build.directory}/dv"/>
+                  <delete dir="${dv.dir}"/>
+                  <mkdir dir="${dv.dir}/src"/>
+                  <mkdir dir="${dv.dir}/classes"/>
+                  <copy todir="${dv.dir}/src">
+                    <fileset dir="${project.basedir}/src">
+                      <include name="org/apache/xerces/impl/Constants.java"/>
+                      <include name="org/apache/xerces/impl/dv/**"/>
+                      <include name="org/apache/xerces/impl/msg/XMLSchema**"/>
+                      <include name="org/apache/xerces/impl/xpath/regex/**"/>
+                      <include name="org/apache/xerces/impl/xs/util/ShortListImpl.java"/>
+                      <include name="org/apache/xerces/impl/xs/SchemaSymbols.java"/>
+                      <include name="org/apache/xerces/impl/xs/XSTypeDecl.java"/>
+                      <include name="org/apache/xerces/jaxp/datatype/*.java"/>
+                      <include name="org/apache/xerces/xs/*.java"/>
+                      <include name="org/apache/xerces/xs/datatypes/*.java"/>
+                      <include name="org/apache/xerces/impl/xs/util/StringListImpl.java"/>
+                      <include name="org/apache/xerces/impl/xs/util/XSObjectListImpl.java"/>
+                      <include name="org/apache/xerces/util/DatatypeMessageFormatter.java"/>
+                      <include name="org/apache/xerces/util/ObjectFactory.java"/>
+                      <include name="org/apache/xerces/util/SecuritySupport.java"/>
+                      <include name="org/apache/xerces/util/SecuritySupport12.java"/>
+                      <include name="org/apache/xerces/util/SymbolHash.java"/>
+                      <include name="org/apache/xerces/util/URI.java"/>
+                      <include name="org/apache/xerces/util/XMLChar.java"/>
+                      <include name="org/apache/xerces/xni/NamespaceContext.java"/>
+                      <include name="org/apache/xerces/xni/QName.java"/>
+                      <exclude name="org/apache/xerces/impl/dv/DatatypeValidator.java"/>
+                      <exclude name="org/apache/xerces/impl/dv/DTDDVFactory.java"/>
+                      <exclude name="org/apache/xerces/impl/dv/dtd/**"/>
+                      <exclude name="org/apache/xerces/impl/dv/xs/SchemaDVFactoryImpl.java"/>
+                    </fileset>
+                  </copy>
+
+                  <replace file="${dv.dir}/src/org/apache/xerces/impl/dv/SchemaDVFactory.java"
+                           token="SchemaDVFactoryImpl" value="FullDVFactory"/>
+
+                  <copy todir="${dv.dir}/classes">
+                    <fileset dir="${project.basedir}/src" includes="**/*.properties"/>
+                  </copy>
+
+                  <javac srcdir="${dv.dir}/src" destdir="${dv.dir}/classes"
+                         source="${javac.source}" target="${javac.target}"
+                         debug="true" debuglevel="lines,source"
+                         includeantruntime="false">
+                    <classpath>
+                      <pathelement location="${project.build.directory}/classes"/>
+                      <path refid="maven.compile.classpath"/>
+                    </classpath>
+                  </javac>
+
+                  <jar jarfile="${project.build.directory}/xercesDV.jar"
+                       basedir="${dv.dir}/classes"
+                       includes="org/apache/xerces/**">
+                    <metainf dir="${project.basedir}" includes="LICENSE,NOTICE"/>
+                  </jar>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- jars-schema11: parser jar with XML Schema 1.1 support. -->
+  <profile>
+    <id>schema11</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>jars-schema11</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <property name="s11.dir" value="${project.build.directory}/schema11"/>
+                  <delete dir="${s11.dir}"/>
+                  <mkdir dir="${s11.dir}/src"/>
+                  <mkdir dir="${s11.dir}/classes"/>
+                  <copy todir="${s11.dir}/src">
+                    <fileset dir="${project.build.directory}/generated-sources/main"
+                             includes="org/apache/**/*.java"/>
+                  </copy>
+
+                  <!-- org.w3c.dom.ls is compiled into this jar. -->
+                  <unzip src="${project.basedir}/tools/xml-commons-external-src.zip"
+                         dest="${s11.dir}/src">
+                    <patternset includes="org/w3c/dom/**"/>
+                  </unzip>
+
+                  <replace file="${s11.dir}/src/org/apache/xerces/impl/Constants.java"
+                           token="SCHEMA_1_1_SUPPORT = false"
+                           value="SCHEMA_1_1_SUPPORT = true"/>
+                  <replace file="${s11.dir}/src/org/apache/xerces/xs/XSConstants.java"
+                           token="public static final short UNAVAILABLE_DT            = 45;">
+                    <replacevalue><![CDATA[public static final short UNAVAILABLE_DT            = 45;
+
+    public static final short YEARMONTHDURATION_DT      = 46;
+
+    public static final short DAYTIMEDURATION_DT        = 47;
+
+    public static final short PRECISIONDECIMAL_DT       = 48;
+
+    public static final short ANYATOMICTYPE_DT          = 49;]]></replacevalue>
+                  </replace>
+
+                  <copy todir="${s11.dir}/classes">
+                    <fileset dir="${project.basedir}/src" includes="**/*.res, **/*.properties"/>
+                  </copy>
+                  <!-- Service registrations, LICENSE and NOTICE from the core build. -->
+                  <copy todir="${s11.dir}/classes">
+                    <fileset dir="${project.build.directory}/classes" includes="META-INF/**"/>
+                  </copy>
+                  <!-- The English message bundles created by the core build. -->
+                  <copy todir="${s11.dir}/classes">
+                    <fileset dir="${project.build.directory}/generated-resources"/>
+                  </copy>
+
+                  <javac srcdir="${s11.dir}/src" destdir="${s11.dir}/classes"
+                         source="${javac.source}" target="${javac.target}"
+                         debug="true" debuglevel="lines,source"
+                         includeantruntime="false"
+                         excludes="org/xml/sax/** javax/xml/** org/w3c/dom/*
+                                   org/w3c/dom/events/** org/w3c/dom/html/**
+                                   org/w3c/dom/ranges/** org/w3c/dom/traversal/**
+                                   org/w3c/dom/xpath/**">
+                    <classpath>
+                      <pathelement location="${project.build.directory}/classes"/>
+                      <path refid="maven.compile.classpath"/>
+                    </classpath>
+                  </javac>
+
+                  <jar jarfile="${project.build.directory}/schema11-xercesImpl.jar"
+                       basedir="${s11.dir}/classes"
+                       includes="org/apache/**, META-INF/**,
+                                 org/w3c/dom/ls/**,
+                                 org/w3c/dom/DOMError.class,
+                                 org/w3c/dom/DOMErrorHandler.class,
+                                 org/w3c/dom/DOMImplementationSource.class,
+                                 org/w3c/dom/DOMImplementationRegistry.class,
+                                 org/w3c/dom/DOMLocator.class,
+                                 org/w3c/dom/UserDataHandler.class"
+                       manifest="${project.build.directory}/generated-manifest/manifest.xerces"/>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- xjavac-jar: the Ant compiler task shipped in the tools package. -->
+  <profile>
+    <id>xjavac</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>1.10.15</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>xjavac-jar</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <property name="xjavac.dir" value="${project.build.directory}/xjavac"/>
+                  <delete dir="${xjavac.dir}"/>
+                  <mkdir dir="${xjavac.dir}/src/org/apache/xerces/util"/>
+                  <mkdir dir="${xjavac.dir}/classes"/>
+                  <copy file="${project.basedir}/tools/src/XJavac.java"
+                        tofile="${xjavac.dir}/src/org/apache/xerces/util/XJavac.java"/>
+                  <javac srcdir="${xjavac.dir}/src" destdir="${xjavac.dir}/classes"
+                         source="${javac.source}" target="${javac.target}"
+                         debug="true" debuglevel="lines,source"
+                         includeantruntime="false">
+                    <classpath refid="maven.compile.classpath"/>
+                  </javac>
+                  <jar jarfile="${project.build.directory}/xjavac.jar"
+                       basedir="${xjavac.dir}/classes"
+                       includes="org/apache/xerces/util/XJavac.class">
+                    <metainf dir="${project.basedir}" includes="LICENSE,NOTICE"/>
+                  </jar>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- =====================================================================
+       jars: xercesImpl + samples jar plus the third-party jars that the Ant
+       build copies into its build directory.
+       ===================================================================== -->
+
+  <profile>
+    <id>jars</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-jars</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}</outputDirectory>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                    <version>1.4.01</version>
+                    <destFileName>xml-apis.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xml-resolver</groupId>
+                    <artifactId>xml-resolver</artifactId>
+                    <version>1.2</version>
+                    <destFileName>resolver.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xalan</groupId>
+                    <artifactId>serializer</artifactId>
+                    <version>2.7.2</version>
+                    <destFileName>serializer.jar</destFileName>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- =====================================================================
+       Documentation. These map to build.xml's docs and javadocs targets.
+       ===================================================================== -->
+
+  <profile>
+    <id>docs</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>docs</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="docs"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.version" value="${project.version}"/>
+                    <property name="xerces.version.underscored" value="${xerces.version.underscored}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.shortname" value="${xerces.shortname}"/>
+                    <property name="xerces.copyright" value="${copyright}"/>
+                    <property name="xerces.default.parser.config.name" value="${default.parser.config.name}"/>
+                    <property name="xerces.default.parser.config.qualified" value="${default.parser.config.qualified}"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <profile>
+    <id>javadocs</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-javadoc-libs</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                    <version>1.4.01</version>
+                    <destFileName>xml-apis.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xml-resolver</groupId>
+                    <artifactId>xml-resolver</artifactId>
+                    <version>1.2</version>
+                    <destFileName>resolver.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xalan</groupId>
+                    <artifactId>serializer</artifactId>
+                    <version>2.7.2</version>
+                    <destFileName>serializer.jar</destFileName>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>javadocs</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="javadocs"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.copyright" value="${copyright}"/>
+                    <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
+                    <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.resolver.jar" value="${project.build.directory}/lib/resolver.jar"/>
+                    <property name="xerces.serializer.jar" value="${project.build.directory}/lib/serializer.jar"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <!-- =====================================================================
+       Distributions. These map to build.xml's pack-* and deprecated targets.
+       The third-party jars are copied out of the local repository instead of
+       the checked-in tools/*.jar files.
+       ===================================================================== -->
+
+  <profile>
+    <id>pack-src</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>pack-src</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="pack-src"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.version" value="${project.version}"/>
+                    <property name="xerces.version.underscored" value="${xerces.version.underscored}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.shortname" value="${xerces.shortname}"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <profile>
+    <id>pack-tools</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>pack-tools</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="pack-tools"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.version" value="${project.version}"/>
+                    <property name="xerces.version.underscored" value="${xerces.version.underscored}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.shortname" value="${xerces.shortname}"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <profile>
+    <id>dist</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-dist-libs</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                    <version>1.4.01</version>
+                    <destFileName>xml-apis.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xml-resolver</groupId>
+                    <artifactId>xml-resolver</artifactId>
+                    <version>1.2</version>
+                    <destFileName>resolver.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xalan</groupId>
+                    <artifactId>serializer</artifactId>
+                    <version>2.7.2</version>
+                    <destFileName>serializer.jar</destFileName>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>dist</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="all"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.version" value="${project.version}"/>
+                    <property name="xerces.version.underscored" value="${xerces.version.underscored}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.shortname" value="${xerces.shortname}"/>
+                    <property name="xerces.copyright" value="${copyright}"/>
+                    <property name="xerces.default.parser.config.name" value="${default.parser.config.name}"/>
+                    <property name="xerces.default.parser.config.qualified" value="${default.parser.config.qualified}"/>
+                    <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
+                    <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.classes.dir" value="${project.build.outputDirectory}"/>
+                    <property name="xerces.apis.jar" value="${project.build.directory}/lib/xml-apis.jar"/>
+                    <property name="xerces.samples.jar" value="${project.build.directory}/xercesImpl-samples.jar"/>
+                    <property name="xerces.samples.jar.ant.name" value="xercesSamples.jar"/>
+                    <property name="xerces.resolver.jar" value="${project.build.directory}/lib/resolver.jar"/>
+                    <property name="xerces.serializer.jar" value="${project.build.directory}/lib/serializer.jar"/>
+                    <property name="xerces.lib.dir" value="${project.build.directory}/lib"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <profile>
+    <id>deprecated</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-deprecated-libs</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                    <version>1.4.01</version>
+                    <destFileName>xml-apis.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xml-resolver</groupId>
+                    <artifactId>xml-resolver</artifactId>
+                    <version>1.2</version>
+                    <destFileName>resolver.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xalan</groupId>
+                    <artifactId>serializer</artifactId>
+                    <version>2.7.2</version>
+                    <destFileName>serializer.jar</destFileName>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>deprecatedjars</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="deprecatedjars"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.classes.dir" value="${project.build.outputDirectory}"/>
+                    <property name="xerces.apis.jar" value="${project.build.directory}/lib/xml-apis.jar"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+
+  <profile>
+    <id>deprecated-dist</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-deprecated-dist-libs</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                    <version>1.4.01</version>
+                    <destFileName>xml-apis.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xml-resolver</groupId>
+                    <artifactId>xml-resolver</artifactId>
+                    <version>1.2</version>
+                    <destFileName>resolver.jar</destFileName>
+                  </artifactItem>
+                  <artifactItem>
+                    <groupId>xalan</groupId>
+                    <artifactId>serializer</artifactId>
+                    <version>2.7.2</version>
+                    <destFileName>serializer.jar</destFileName>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>deprecated-dist</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <ant antfile="${project.basedir}/maven-tasks.xml"
+                       dir="${project.basedir}"
+                       target="deprecatedall"
+                       inheritAll="true">
+                    <property name="xerces.basedir" value="${project.basedir}"/>
+                    <property name="xerces.build.dir" value="${project.build.directory}"/>
+                    <property name="xerces.version" value="${project.version}"/>
+                    <property name="xerces.version.underscored" value="${xerces.version.underscored}"/>
+                    <property name="xerces.name" value="${xerces.name}"/>
+                    <property name="xerces.shortname" value="${xerces.shortname}"/>
+                    <property name="xerces.copyright" value="${copyright}"/>
+                    <property name="xerces.default.parser.config.name" value="${default.parser.config.name}"/>
+                    <property name="xerces.default.parser.config.qualified" value="${default.parser.config.qualified}"/>
+                    <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
+                    <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.classes.dir" value="${project.build.outputDirectory}"/>
+                    <property name="xerces.apis.jar" value="${project.build.directory}/lib/xml-apis.jar"/>
+                    <property name="xerces.samples.jar" value="${project.build.directory}/xercesImpl-samples.jar"/>
+                    <property name="xerces.samples.jar.ant.name" value="xercesSamples.jar"/>
+                    <property name="xerces.resolver.jar" value="${project.build.directory}/lib/resolver.jar"/>
+                    <property name="xerces.serializer.jar" value="${project.build.directory}/lib/serializer.jar"/>
+                    <property name="xerces.lib.dir" value="${project.build.directory}/lib"/>
+                  </ant>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+  </profiles>
+</project>

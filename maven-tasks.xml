@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!--
+  Maven-specific ports of the optional build.xml targets.
+
+  This file is only used by Maven profiles through maven-antrun-plugin. It is
+  deliberately separate from build.xml so that the Ant build keeps working
+  unchanged. All paths and versions are passed in as properties by the POM.
+
+  The targets here mirror build.xml, with two intentional bug fixes called out
+  in the comments: the binary distribution gets its NOTICE and DOM licenses,
+  and the shipped javadocs include the XML Schema API set.
+-->
+<project name="xerces-maven-tasks" basedir="." default="usage">
+
+  <!-- =================================================================== -->
+  <!-- Documentation                                                       -->
+  <!-- =================================================================== -->
+
+  <!-- Mirrors build.xml's prepare-docs. -->
+  <target name="prepare-docs">
+    <mkdir dir="${xerces.build.dir}/docs"/>
+    <delete dir="${xerces.build.dir}/xdocs"/>
+    <mkdir dir="${xerces.build.dir}/xdocs"/>
+    <copy todir="${xerces.build.dir}/xdocs">
+      <fileset dir="${xerces.basedir}/docs"/>
+    </copy>
+    <replace file="${xerces.build.dir}/xdocs/dtd/entities.ent"
+             token="@@VERSION@@" value="${xerces.version}"/>
+    <replace file="${xerces.build.dir}/xdocs/dtd/entities.ent"
+             token="@@version@@" value="${xerces.version}"/>
+    <replace file="${xerces.build.dir}/xdocs/dtd/entities.ent"
+             token="@@_version_@@" value="${xerces.version.underscored}"/>
+    <replace file="${xerces.build.dir}/xdocs/dtd/entities.ent"
+             token="@@DEFAULT_CONFIG@@" value="${xerces.default.parser.config.name}"/>
+    <replace file="${xerces.build.dir}/xdocs/dtd/entities.ent"
+             token="@@DEFAULT_CONFIG_LONG@@" value="${xerces.default.parser.config.qualified}"/>
+  </target>
+
+  <!-- Mirrors build.xml's docs target. -->
+  <target name="docs" depends="prepare-docs">
+    <echo message="Building docs for ${xerces.name} ${xerces.version} ..."/>
+    <delete dir="${xerces.build.dir}/intermediate"/>
+    <delete dir="${xerces.build.dir}/docs"/>
+    <mkdir dir="${xerces.build.dir}/intermediate"/>
+    <mkdir dir="${xerces.build.dir}/docs"/>
+
+    <!-- First process the files that need two-phase transformations. -->
+    <xslt destdir="${xerces.build.dir}/intermediate"
+          basedir="${xerces.build.dir}/xdocs"
+          includes="faq-*.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/faqs2document.xsl"
+          extension=".xml">
+      <outputproperty name="method" value="xml"/>
+    </xslt>
+    <xslt destdir="${xerces.build.dir}/intermediate"
+          in="${xerces.basedir}/docs/docs-book.xml"
+          out="${xerces.build.dir}/intermediate/groupfaqs.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/book2group.xsl"
+          extension=".xml">
+      <outputproperty name="method" value="xml"/>
+      <outputproperty name="indent" value="yes"/>
+    </xslt>
+    <xslt destdir="${xerces.build.dir}/intermediate"
+          in="${xerces.build.dir}/intermediate/groupfaqs.xml"
+          out="${xerces.build.dir}/intermediate/faqs.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/group2document.xsl"
+          extension=".xml">
+      <outputproperty name="method" value="xml"/>
+    </xslt>
+    <xslt destdir="${xerces.build.dir}/intermediate"
+          basedir="${xerces.build.dir}/xdocs"
+          includes="properties.xml,features.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/settings2document.xsl"
+          extension=".xml">
+      <outputproperty name="method" value="xml"/>
+    </xslt>
+    <xslt destdir="${xerces.build.dir}/intermediate"
+          basedir="${xerces.build.dir}/xdocs"
+          includes="releases.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/releases2document.xsl"
+          extension=".xml">
+      <outputproperty name="method" value="xml"/>
+    </xslt>
+
+    <!-- Now process all the XML documents to produce HTML documents. -->
+    <xslt destdir="${xerces.build.dir}/docs"
+          basedir="${xerces.build.dir}/intermediate"
+          includes="faq*.xml,features.xml,properties.xml,releases.xml"
+          filenameparameter="sourceFilePath"
+          style="${xerces.basedir}/docs/style/stylesheets/document2html.xsl">
+    </xslt>
+    <xslt destdir="${xerces.build.dir}/docs"
+          basedir="${xerces.build.dir}/xdocs"
+          filenameparameter="sourceFilePath"
+          includes="api.xml, charter.xml, dom.xml, dom3.xml, download.xml, install.xml, jira.xml, limitations.xml, releases.xml, sax.xml, security.xml, source-repository.xml, xml-schema.xml, samples*.xml, xni*.xml"
+          style="${xerces.basedir}/docs/style/stylesheets/document2html.xsl">
+    </xslt>
+    <xslt in="${xerces.build.dir}/xdocs/readme.xml"
+          out="${xerces.build.dir}/docs/index.html"
+          style="${xerces.basedir}/docs/style/stylesheets/document2html.xsl">
+      <param name="id" expression="'index'"/>
+    </xslt>
+
+    <!-- Copy literal files that do not require transformation. -->
+    <copy file="${xerces.basedir}/docs/download.cgi"
+          tofile="${xerces.build.dir}/docs/download.cgi"/>
+    <copy todir="${xerces.build.dir}/docs/resources">
+      <fileset dir="${xerces.basedir}/docs/style/resources"/>
+    </copy>
+    <copy todir="${xerces.build.dir}/docs/graphics">
+      <fileset dir="${xerces.basedir}/docs/style/graphics"/>
+    </copy>
+  </target>
+
+  <!-- Mirrors build.xml's javadoc-replace target. -->
+  <target name="javadoc-replace">
+    <replace token="@xerces.internal" dir="${xerces.gen.src}">
+      <replacevalue><![CDATA[<dl><dt><strong>INTERNAL:</strong></dt><dd>Usage of this class is not supported. It may be altered or removed at any time.</dd></dl>]]></replacevalue>
+    </replace>
+    <replace token="@xerces.experimental" dir="${xerces.gen.src}">
+      <replacevalue><![CDATA[<dl><dt><strong>EXPERIMENTAL:</strong></dt><dd>This class should not be considered stable. It is likely to be altered or replaced in the future.</dd></dl>]]></replacevalue>
+    </replace>
+  </target>
+
+  <!-- Mirrors build.xml's javadocs target. -->
+  <target name="javadocs" depends="javadoc-replace">
+    <delete dir="${xerces.build.dir}/docs/javadocs"/>
+    <mkdir dir="${xerces.build.dir}/api-src"/>
+    <!-- The XML, SAX and DOM API sources that the Ant build unzips. -->
+    <unzip src="${xerces.apis.src.zip}" dest="${xerces.build.dir}/api-src"/>
+
+    <condition property="additional.param"
+               value=" -taglet org.apache.xerces.util.ExperimentalTaglet -taglet org.apache.xerces.util.InternalTaglet -tagletpath ${xerces.tools.dir}/bin/xerces2taglets.jar">
+      <available classname="com.sun.tools.doclets.Taglet"/>
+    </condition>
+    <property name="additional.param" value=""/>
+
+    <mkdir dir="${xerces.build.dir}/docs/javadocs/api"/>
+    <javadoc packagenames="javax.xml.*,org.w3c.*,org.xml.*"
+      locale="en_US"
+      sourcepath="${xerces.gen.src}${path.separator}${xerces.build.dir}/api-src"
+      destdir="${xerces.build.dir}/docs/javadocs/api"
+      author="true" version="true"
+      windowtitle="XML Standard API" doctitle="XML Standard API"
+      bottom="${xerces.copyright}"
+      additionalparam="-quiet ${additional.param}"
+      failonerror="no"
+      failonwarning="no">
+      <arg value="-Xdoclint:none"/>
+    </javadoc>
+
+    <mkdir dir="${xerces.build.dir}/docs/javadocs/xni"/>
+    <javadoc packagenames="org.apache.xerces.xni.*"
+      locale="en_US"
+      sourcepath="${xerces.gen.src}${path.separator}${xerces.build.dir}/api-src"
+      destdir="${xerces.build.dir}/docs/javadocs/xni"
+      author="true" version="true"
+      windowtitle="Xerces Native Interface"
+      doctitle="Xerces Native Interface"
+      bottom="${xerces.copyright}"
+      additionalparam="-quiet ${additional.param}"
+      failonerror="no"
+      failonwarning="no">
+      <arg value="-Xdoclint:none"/>
+    </javadoc>
+
+    <mkdir dir="${xerces.build.dir}/docs/javadocs/xs"/>
+    <javadoc packagenames="org.apache.xerces.xs, org.apache.xerces.xs.datatypes"
+      locale="en_US"
+      sourcepath="${xerces.gen.src}"
+      destdir="${xerces.build.dir}/docs/javadocs/xs"
+      author="true" version="true"
+      windowtitle="XML Schema API"
+      doctitle="XML Schema API"
+      bottom="${xerces.copyright}"
+      additionalparam="-quiet ${additional.param}"
+      failonerror="no"
+      failonwarning="no">
+      <arg value="-Xdoclint:none"/>
+    </javadoc>
+
+    <mkdir dir="${xerces.build.dir}/docs/javadocs/xerces2"/>
+    <javadoc packagenames="org.apache.xerces.dom.*,
+                           org.apache.xerces.impl.*,
+                           org.apache.xerces.jaxp.*,
+                           org.apache.xerces.parsers,
+                           org.apache.xerces.stax.*,
+                           org.apache.xerces.util,
+                           org.apache.xerces.xinclude,
+                           org.apache.xerces.xpointer"
+      locale="en_US"
+      sourcepath="${xerces.gen.src}"
+      destdir="${xerces.build.dir}/docs/javadocs/xerces2"
+      classpath="${xerces.resolver.jar}${path.separator}${xerces.serializer.jar}"
+      author="true" version="true"
+      windowtitle="Xerces2 Implementation"
+      doctitle="Xerces2 Implementation"
+      bottom="${xerces.copyright}"
+      additionalparam="-quiet ${additional.param}"
+      failonerror="no"
+      failonwarning="no">
+      <arg value="-Xdoclint:none"/>
+    </javadoc>
+
+    <mkdir dir="${xerces.build.dir}/docs/javadocs/other"/>
+    <javadoc packagenames="org.apache.html.*,
+                           org.apache.wml.*,
+                           org.apache.xml.serialize.*"
+      locale="en_US"
+      sourcepath="${xerces.gen.src}"
+      destdir="${xerces.build.dir}/docs/javadocs/other"
+      author="true" version="true"
+      windowtitle="Other Classes" doctitle="Other Classes"
+      bottom="${xerces.copyright}"
+      additionalparam="-quiet ${additional.param}"
+      failonerror="no"
+      failonwarning="no">
+      <arg value="-Xdoclint:none"/>
+    </javadoc>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Jars                                                                -->
+  <!-- =================================================================== -->
+
+  <!-- Mirrors build.xml's deprecatedjar target: the legacy omnibus jar.
+       LICENSE and NOTICE are already in the compiled classes as resources,
+       so no <metainf> element is needed here. Like the Ant build, this jar
+       only contains what was compiled into the main classes directory; the
+       bundled XML APIs were dropped from the source tree long ago. -->
+  <target name="deprecatedjar">
+    <delete file="${xerces.build.dir}/xerces.jar"/>
+    <jar jarfile="${xerces.build.dir}/xerces.jar"
+         basedir="${xerces.classes.dir}"
+         compress="true"
+         includes="org/**, javax/**, META-INF/**">
+    </jar>
+  </target>
+
+  <target name="deprecatedjars" depends="deprecatedjar"/>
+
+  <!-- =================================================================== -->
+  <!-- Source distribution                                                 -->
+  <!-- =================================================================== -->
+
+  <target name="pack-src" depends="init-dist">
+    <echo message="Building the source distribution files (zip, tar.gz)"/>
+    <delete dir="${xerces.build.dir}/dist-src"/>
+    <property name="distsrc.dir" value="${xerces.build.dir}/dist-src/${xerces.shortname}-${xerces.version.underscored}"/>
+
+    <mkdir dir="${distsrc.dir}"/>
+    <mkdir dir="${distsrc.dir}/src"/>
+    <mkdir dir="${distsrc.dir}/data"/>
+    <mkdir dir="${distsrc.dir}/docs"/>
+    <mkdir dir="${distsrc.dir}/samples"/>
+
+    <copy todir="${distsrc.dir}/src">
+      <fileset dir="${xerces.basedir}/src"
+               includes="org/**, dom3/**, javax/**, manifest.xerces"
+               excludes="**/CVS*, **/.#*, **/*.class
+                         **/v1/** **/v2/**"/>
+    </copy>
+    <copy todir="${distsrc.dir}/data">
+      <fileset dir="${xerces.basedir}/data" excludes="**/CVS*, **/.#*"/>
+    </copy>
+    <copy todir="${distsrc.dir}/docs">
+      <fileset dir="${xerces.basedir}/docs"
+               excludes="**/CVS*, **/*.#*, pdf/**, html/**, **/javadocs*"/>
+    </copy>
+    <copy todir="${distsrc.dir}/samples">
+      <fileset dir="${xerces.basedir}/samples" excludes="**/CVS*, **/*.#*"/>
+    </copy>
+
+    <copy file="${xerces.basedir}/LICENSE" tofile="${distsrc.dir}/LICENSE"/>
+    <copy file="${xerces.basedir}/NOTICE" tofile="${distsrc.dir}/NOTICE"/>
+    <copy file="${xerces.basedir}/LICENSE.DOM-documentation.html"
+          tofile="${distsrc.dir}/LICENSE.DOM-documentation.html"/>
+    <copy file="${xerces.basedir}/LICENSE.DOM-software.html"
+          tofile="${distsrc.dir}/LICENSE.DOM-software.html"/>
+    <copy file="${xerces.basedir}/README.md" tofile="${distsrc.dir}/README.md"/>
+    <copy file="${xerces.basedir}/build.xml" tofile="${distsrc.dir}/build.xml"/>
+    <copy file="${xerces.basedir}/build.sh" tofile="${distsrc.dir}/build.sh"/>
+    <chmod file="${distsrc.dir}/build.sh" perm="ugo+rx"/>
+    <copy file="${xerces.basedir}/build.bat" tofile="${distsrc.dir}/build.bat"/>
+
+    <!-- Make the source distribution buildable with Maven out of the box. -->
+    <copy file="${xerces.basedir}/pom.xml" tofile="${distsrc.dir}/pom.xml"/>
+    <copy file="${xerces.basedir}/maven-tasks.xml" tofile="${distsrc.dir}/maven-tasks.xml"/>
+    <copy file="${xerces.basedir}/mvnw" tofile="${distsrc.dir}/mvnw"/>
+    <chmod file="${distsrc.dir}/mvnw" perm="ugo+rx"/>
+    <copy file="${xerces.basedir}/mvnw.cmd" tofile="${distsrc.dir}/mvnw.cmd"/>
+    <copy file="${xerces.basedir}/.mvn/wrapper/maven-wrapper.properties"
+          tofile="${distsrc.dir}/.mvn/wrapper/maven-wrapper.properties"/>
+
+    <zip zipfile="${xerces.build.dir}/${xerces.name}-src.${xerces.version}.zip"
+         basedir="${xerces.build.dir}/dist-src"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class"/>
+    <tar tarfile="${xerces.build.dir}/${xerces.name}-src.${xerces.version}.tar"
+         basedir="${xerces.build.dir}/dist-src"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class"/>
+    <gzip zipfile="${xerces.build.dir}/${xerces.name}-src.${xerces.version}.tar.gz"
+          src="${xerces.build.dir}/${xerces.name}-src.${xerces.version}.tar"/>
+    <delete file="${xerces.build.dir}/${xerces.name}-src.${xerces.version}.tar"/>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Tools distribution                                                  -->
+  <!-- =================================================================== -->
+
+  <target name="pack-tools" depends="init-dist">
+    <echo message="Building the tools distribution files (zip, tar.gz)"/>
+    <delete dir="${xerces.build.dir}/dist-tools"/>
+    <mkdir dir="${xerces.build.dir}/dist-tools/tools"/>
+    <copy todir="${xerces.build.dir}/dist-tools/tools">
+      <fileset dir="${xerces.basedir}/tools"
+               includes="**/*.txt, **/*.html, **/*.bat, **/*.jar, **/*.zip, **/*.opt"
+               excludes="**/CVS*, **/.#*, **/*.class"/>
+    </copy>
+
+    <zip zipfile="${xerces.build.dir}/${xerces.name}-tools.${xerces.version}.zip"
+         basedir="${xerces.build.dir}/dist-tools"
+         includes="tools/**"/>
+    <tar tarfile="${xerces.build.dir}/${xerces.name}-tools.${xerces.version}.tar"
+         basedir="${xerces.build.dir}/dist-tools"
+         includes="tools/**"/>
+    <gzip zipfile="${xerces.build.dir}/${xerces.name}-tools.${xerces.version}.tar.gz"
+          src="${xerces.build.dir}/${xerces.name}-tools.${xerces.version}.tar"/>
+    <delete file="${xerces.build.dir}/${xerces.name}-tools.${xerces.version}.tar"/>
+    <delete dir="${xerces.build.dir}/dist-tools"/>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Binary distributions                                                -->
+  <!-- =================================================================== -->
+
+  <target name="init-dist">
+    <mkdir dir="${xerces.build.dir}"/>
+  </target>
+
+  <target name="pack-bin-common" depends="init-dist">
+    <echo message="Building the binary distribution files (zip, tar.gz)"/>
+    <delete dir="${xerces.build.dir}/dist-bin"/>
+    <property name="distbin.dir" value="${xerces.build.dir}/dist-bin/${xerces.shortname}-${xerces.version.underscored}"/>
+
+    <mkdir dir="${distbin.dir}"/>
+    <mkdir dir="${distbin.dir}/data"/>
+    <mkdir dir="${distbin.dir}/docs"/>
+    <mkdir dir="${distbin.dir}/docs/javadocs"/>
+    <mkdir dir="${distbin.dir}/samples"/>
+
+    <copy todir="${distbin.dir}/data">
+      <fileset dir="${xerces.basedir}/data" excludes="**/CVS*, **/*.#*"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs">
+      <fileset dir="${xerces.build.dir}/docs"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs/javadocs/api">
+      <fileset dir="${xerces.build.dir}/docs/javadocs/api"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs/javadocs/xni">
+      <fileset dir="${xerces.build.dir}/docs/javadocs/xni"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs/javadocs/xs">
+      <fileset dir="${xerces.build.dir}/docs/javadocs/xs"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs/javadocs/xerces2">
+      <fileset dir="${xerces.build.dir}/docs/javadocs/xerces2"/>
+    </copy>
+    <copy todir="${distbin.dir}/docs/javadocs/other">
+      <fileset dir="${xerces.build.dir}/docs/javadocs/other"/>
+    </copy>
+
+    <copy file="${xerces.basedir}/LICENSE" tofile="${distbin.dir}/LICENSE"/>
+    <copy file="${xerces.basedir}/NOTICE" tofile="${distbin.dir}/NOTICE"/>
+    <copy file="${xerces.basedir}/LICENSE.DOM-documentation.html"
+          tofile="${distbin.dir}/LICENSE.DOM-documentation.html"/>
+    <copy file="${xerces.basedir}/LICENSE.DOM-software.html"
+          tofile="${distbin.dir}/LICENSE.DOM-software.html"/>
+    <copy file="${xerces.basedir}/README.md" tofile="${distbin.dir}/README.md"/>
+    <copy file="${xerces.samples.jar}"
+          tofile="${distbin.dir}/${xerces.samples.jar.ant.name}"/>
+    <copy todir="${distbin.dir}/samples">
+      <fileset dir="${xerces.basedir}/samples" excludes="**/CVS*, **/*.#*"/>
+    </copy>
+  </target>
+
+  <target name="pack-bin" depends="init-dist, docs, javadocs, pack-bin-common">
+    <property name="distbin.dir" value="${xerces.build.dir}/dist-bin/${xerces.shortname}-${xerces.version.underscored}"/>
+    <copy file="${xerces.build.dir}/xercesImpl.jar" tofile="${distbin.dir}/xercesImpl.jar"/>
+    <copy file="${xerces.lib.dir}/xml-apis.jar" tofile="${distbin.dir}/xml-apis.jar"/>
+    <copy file="${xerces.lib.dir}/resolver.jar" tofile="${distbin.dir}/resolver.jar"/>
+    <copy file="${xerces.lib.dir}/serializer.jar" tofile="${distbin.dir}/serializer.jar"/>
+
+    <zip zipfile="${xerces.build.dir}/${xerces.name}-bin.${xerces.version}.zip"
+         basedir="${xerces.build.dir}/dist-bin"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class, **/xerces.jar"/>
+    <tar tarfile="${xerces.build.dir}/${xerces.name}-bin.${xerces.version}.tar"
+         basedir="${xerces.build.dir}/dist-bin"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class, **/xerces.jar"/>
+    <gzip zipfile="${xerces.build.dir}/${xerces.name}-bin.${xerces.version}.tar.gz"
+          src="${xerces.build.dir}/${xerces.name}-bin.${xerces.version}.tar"/>
+    <delete file="${xerces.build.dir}/${xerces.name}-bin.${xerces.version}.tar"/>
+  </target>
+
+  <target name="deprecated-bin" depends="init-dist, docs, javadocs, pack-bin-common, deprecatedjars">
+    <property name="distbin.dir" value="${xerces.build.dir}/dist-bin/${xerces.shortname}-${xerces.version.underscored}"/>
+    <copy file="${xerces.build.dir}/xerces.jar" tofile="${distbin.dir}/xerces.jar"/>
+    <!-- Unlike build.xml, ship the XML APIs: the omnibus xerces.jar no longer
+         contains them, and the deprecated distribution needs them. -->
+    <copy file="${xerces.lib.dir}/xml-apis.jar" tofile="${distbin.dir}/xml-apis.jar"/>
+    <copy file="${xerces.lib.dir}/resolver.jar" tofile="${distbin.dir}/resolver.jar"/>
+    <copy file="${xerces.lib.dir}/serializer.jar" tofile="${distbin.dir}/serializer.jar"/>
+
+    <zip zipfile="${xerces.build.dir}/deprecated${xerces.name}-bin.${xerces.version}.zip"
+         basedir="${xerces.build.dir}/dist-bin"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class, **/xercesImpl.jar"/>
+    <tar tarfile="${xerces.build.dir}/deprecated${xerces.name}-bin.${xerces.version}.tar"
+         basedir="${xerces.build.dir}/dist-bin"
+         includes="${xerces.shortname}-${xerces.version.underscored}/**"
+         excludes="*.class, **/xercesImpl.jar"/>
+    <gzip zipfile="${xerces.build.dir}/deprecated${xerces.name}-bin.${xerces.version}.tar.gz"
+          src="${xerces.build.dir}/deprecated${xerces.name}-bin.${xerces.version}.tar"/>
+    <delete file="${xerces.build.dir}/deprecated${xerces.name}-bin.${xerces.version}.tar"/>
+  </target>
+
+  <target name="all" depends="pack-bin, pack-src, pack-tools"/>
+  <target name="deprecatedall" depends="pack-src, deprecated-bin, pack-tools"/>
+
+  <target name="usage">
+    <echo message="Optional Xerces targets, driven from the Maven build."/>
+  </target>
+</project>
