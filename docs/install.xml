@@ -123,8 +123,10 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
   <note>
    To use &ParserName; you do not need the source files. 
    However, if you want to recompile the sources you need to
-   download the source package and have the contents of the tools
-   package (or equivalent) available.
+   download the source package. The Maven wrapper included in that
+   package downloads the build tool automatically; the tools package
+   is only needed for the optional <code>javadocs</code> and
+   <code>xjavac</code> profiles.
   </note>
   <note>
     xerces.jar is no longer available in the main distribution. You can still 
@@ -172,19 +174,19 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
     <td>W3C Software License</td>
    </tr>
    <tr>
-    <td>build.bat</td>
-    <td>Batch file for invoking Ant build for Windows users</td>
+    <td>pom.xml</td>
+    <td>Maven build file -- read README.md before building</td>
    </tr>
    <tr>
-    <td>build.sh</td>
-    <td>Shell script for invoking Ant build for UNIX users</td>
+    <td>mvnw</td>
+    <td>Maven wrapper script for UNIX users</td>
    </tr>
    <tr>
-    <td>build.xml</td>
-    <td>Ant build file -- read README file before building</td>
+    <td>mvnw.cmd</td>
+    <td>Maven wrapper script for Windows users</td>
    </tr>
    <tr>
-    <td>README</td>
+    <td>README.md</td>
     <td>Build instructions</td>
    </tr>
    <tr>
@@ -206,43 +208,43 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
    <tr>
     <td>src/</td>
     <td>
-     Directory containing source code for parser and supplemental APIs
+     Directory containing the parser sources, resources and tests
+     (standard Maven layout)
     </td>
    </tr>
   </table>
   <note>
-   In order to compile the source code using Ant or to build the
-   release distributions yourself, you must have the contents of 
-   <code>&ParserName;-tools.&parserversion;.zip</code>
-   on your classpath; i.e., you will need access to a version of Ant,
-   Xalan, StyleBook and an XML parser such as Xerces.
-   For ease of use, we recommend extracting
-   <code>&ParserName;-tools.&parserversion;.zip</code>
-   in your Xerces root directory; the build.sh and build.bat scripts
-   are written for this case.
+   The source code is built with Maven. The <code>mvnw</code> script in
+   the source package downloads a suitable Maven version automatically,
+   so no separate Maven installation is required. A few optional
+   profiles (the <code>javadocs</code> and <code>xjavac</code> builds)
+   still read their inputs from
+   <code>&ParserName;-tools.&parserversion;.zip</code>; extract that
+   package in your Xerces root directory if you need them.
   </note>
  </s2>
  <s2 title='Files in the Build Tools Package'>
   <table>
    <tr>
     <td>ant*.jar</td>
-    <td>Jar files containing Apache Ant 1.7.1 for building Xerces-J</td>
+    <td>Jar files containing Apache Ant 1.10.15, used to compile the
+    XJavac Ant task and to run Ant-based tooling</td>
    </tr>
    <tr>
     <td>ant*.LICENSE.txt</td>
-    <td>License for Apache Ant 1.7.1</td>
+    <td>License for Apache Ant 1.10.15</td>
    </tr>
    <tr>
     <td>ant*.NOTICE.txt</td>
-    <td>NOTICE file for Apache Ant 1.7.1</td>
+    <td>NOTICE file for Apache Ant 1.10.15</td>
    </tr>
    <tr>
-    <td>junit.jar</td>
-    <td>Jar file containing JUnit 3.8.1</td>
+    <td>junit-4.10.jar</td>
+    <td>Jar file containing JUnit 4.10</td>
    </tr>
    <tr>
     <td>junit.LICENSE.html</td>
-    <td>License for JUnit 3.8.1</td>
+    <td>License for JUnit 4.10</td>
    </tr>
    <tr>
     <td>resolver.jar</td>
@@ -271,45 +273,9 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
     <td>NOTICE file for the Apache Xalan serializer</td>
    </tr>
    <tr>
-    <td>stylebook-1.0-b2.jar</td>
-    <td>Jar file containing the Apache Stylebook for building the
-    Xerces-J documentation</td>
-   </tr>
-   <tr>
-    <td>stylebook-1.0-b2.LICENSE.txt</td>
-    <td>License for the Apache Stylebook</td>
-   </tr>
-   <tr>
-    <td>xalan.jar</td>
-    <td>Jar file containing Apache Xalan 2.7.2 (required by
-    the Apache Stylebook for building the Xerces-J documentation)</td>
-   </tr>
-   <tr>
-    <td>xalan.LICENSE.txt</td>
-    <td>License for Apache Xalan 2.7.2</td>
-   </tr>
-   <tr>
-    <td>xalan.NOTICE.txt</td>
-    <td>NOTICE file for Apache Xalan 2.7.2</td>
-   </tr>
-   <tr>
-    <td>xercesImpl.jar</td>
-    <td>Jar file containing Apache Xerces-J 2.9.1 (required by
-    Apache Ant for building Xerces-J and the Apache Stylebook
-    for building its documentation)</td>
-   </tr>
-   <tr>
-    <td>xercesImpl.LICENSE.txt</td>
-    <td>License for Apache Xerces-J 2.9.1</td>
-   </tr>
-   <tr>
-    <td>xercesImpl.NOTICE.txt</td>
-    <td>NOTICE file for Apache Xerces-J 2.9.1</td>
-   </tr>
-   <tr>
     <td>xml-apis.jar</td>
     <td>Jar file containing Apache XML Commons External 1.4.01
-    (required by Apache Ant for building Xerces-J)</td>
+    (used by the javadocs and xjavac builds)</td>
    </tr>
    <tr>
     <td>xml-apis.LICENSE.txt</td>
@@ -334,16 +300,15 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
    </tr>
    <tr>
     <td>bin/</td>
-    <td>Contains scripts for Ant, a specialized Ant target for
-    building Xerces-J and a taglet for generating custom Javadoc
-    from <code>@xerces.internal</code> and <code>@xerces.experimental</code>
-    tags in the source code.</td>
+    <td>Contains the taglets for generating custom Javadoc from
+    <code>@xerces.internal</code> and <code>@xerces.experimental</code>
+    tags in the source code, and the XJavac Ant task.</td>
    </tr>
   </table>
   <note>
-   The xercesImpl.jar in the tools package is provided for building
-   Xerces-J through Ant. This jar will always be older than the 
-   current release of Xerces-J and is not intended for application use.
+   The compiler and library jars that the Maven build needs are resolved
+   from Maven Central. The tools package only provides the extra inputs
+   used by the <code>javadocs</code> and <code>xjavac</code> profiles.
   </note>
  </s2>
  <s2 title='Changes in Xerces jar files'>
@@ -360,31 +325,22 @@ jar xf &ParserName;-tools.&parserversion;.zip</source>
  same level as those supported by &ParserName;, you can avoid putting
  <code>xml-apis.jar</code> on your classpath.</p>
 
- <p>Should you wish to use the <code>xerces.jar</code> instead, we have
- included several Ant targets for backward compatibility.  An
- &quot;Ant target&quot; is an argument given to Ant, our build tool,
- that tells it which portions of the <code>build.xml</code> file to
- apply. 
+ <p>Should you wish to use the <code>xerces.jar</code> instead, use the
+ <code>deprecated</code> Maven profile. Running
+ <code>./mvnw clean package -Pdeprecated</code> produces
+ <code>target/xerces.jar</code>.
 </p>
 
  <p> 
- If you are on a Windows system and you wish to get only the
- xerces.jar file, you would execute <code>build.bat
- deprecatedjars</code>.  
+ If you want to regenerate the deprecated binary distribution with the
+ old-style jar file, run
+ <code>./mvnw clean verify -Pdeprecated-dist</code>. This produces
+ <code>target/deprecated&ParserName;-bin.&parserversion;.zip</code> and
+ the corresponding <code>.tar.gz</code> file.
  </p>
  <p>
- If you want to regenerate new versions of the Xerces
- binary, source and tools distributions with the old-style jar files,
- you would execute <code>build.bat deprecatedall</code>.  
-
- The situation is
- analogous for Unix users, except that <code>build.sh</code> would be
- used instead of <code>build.bat</code>.  
- </p>
- <p>
- For further information and
- more options, please look inside build.xml itself; all possibilities
- are documented there.
+ For the complete list of profiles, see the <code>README.md</code> file
+ in the source package.
  </p>
 </s2>
 <s2 title="Verifying signatures">

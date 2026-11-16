@@ -22,34 +22,30 @@
   <a>
    <p>
     To build &ParserName; you need the Java Development
-    Kit (JDK) version 1.7 (or higher) installed on your machine.
-    The actual build is performed by the Ant program which is
-    written in Java and is a subproject of the Apache
-    <jump href='https://ant.apache.org/'>Ant</jump>
-    project. The build also requires a few other tools but
-    all of the tools you need (including Ant) are contained
-    in the <ref>&ParserName;-tools.&parserversion;.zip</ref>
-    file, packaged separately. Go to the &ParserName; 
-    <jump href='https://xerces.apache.org/mirrors.cgi'>download</jump>
-    page to download the tools package and then extract it in the
-    same location as the source package.
+    Kit (JDK) version 1.8 (or higher) installed on your machine.
+    The build is performed by
+    <jump href='https://maven.apache.org/'>Maven</jump>.
+    The source package includes the Maven wrapper (<code>mvnw</code>
+    and <code>mvnw.cmd</code>), which downloads a suitable Maven
+    version automatically, so no separate Maven installation is
+    required.
    </p>
    <p>
-    Once you have extracted both the source and tools packages
-    in the same directory, you can invoke a build by either
-    using the "build.bat" file for Windows platforms or the
-    "build.sh" file for UNIX platforms. Before invoking either
-    one of these scripts, though, be sure to set the JAVA_HOME
-    environment variable to the installed location of your JDK.
+    Before invoking the build, set the <code>JAVA_HOME</code>
+    environment variable to the installed location of your JDK. Then,
+    from the directory where you extracted &ParserName;, run:
+   </p>
+   <source>./mvnw clean package</source>
+   <p>
+    On Windows, use <code>mvnw.cmd clean package</code> instead. This
+    compiles the source files and creates the JAR files in the
+    <code>target</code> directory. To compile and run the tests as
+    well, run <code>./mvnw clean verify</code>.
    </p>
    <p>
-    The script will invoke the Ant build program for you which
-    displays the list of allowed build targets. To only compile
-    the source files, type "build compile" (on Windows platforms)
-    at the command line in the directory where you extracted 
-    &ParserName;; to build the Jar files, type "build jars"; and
-    to build everything, including documentation, type "build
-    all".
+    The documentation, the distributions and the alternative jars are
+    enabled with Maven profiles. For the complete list, see the
+    <code>README.md</code> file in the source package.
    </p>
   </a>
  </faq>
@@ -58,8 +54,13 @@
   <a>
    <p>
     To regenerate the API documentation, you need to set up
-    your environment to build &ParserName;.  Instead of typing 
-    "build all", you type "build javadocs".
+    your environment to build &ParserName;.  Instead of running
+    <code>./mvnw clean package</code>, run:
+   </p>
+   <source>./mvnw clean package -Pjavadocs</source>
+   <p>
+    The generated documentation is written to
+    <code>target/docs/javadocs</code>.
    </p>
   </a>
  </faq>

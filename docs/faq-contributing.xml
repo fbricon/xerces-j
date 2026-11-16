@@ -76,11 +76,10 @@
         </p>
         <ol> 
         <li>Change the following files:<br/>
-            <code>build.xml</code>
-                (that is, change the <code>parser.Version</code>,
-                <code>parser.version</code>, and 
-                <code>parser_version</code> properties as appropriate for the
-                release).<br/>  
+            <code>pom.xml</code>
+                (that is, change the <code>&lt;version&gt;</code> and
+                <code>xerces.version.underscored</code> properties as
+                appropriate for the release).<br/>  
             <code>docs/releases.xml</code> 
                 (contributors should have updated this file as significant 
                 changes/patches were applied, but the release manager should verify that 
@@ -93,22 +92,20 @@
             where x.y.z is the Xerces-J release number).
         </li>
         <li>Do a test build and regression test run;
-            i.e., <code>build test</code> at a bare minimum.
+            i.e., <code>./mvnw clean verify</code> at a bare minimum.
             In general, apply as many test suites (OASIS XML
                 tests, W3C DOM and Schema tests etc.) as are
                 available, particularly with a view to preventing
                 regressions since the previous release.
         </li>
         <li>Do the final build based on that tag:<br/>
-            windows build to produce <code>.zip</code>
-                packages<br/>
-            unix build (on a unix machine to make sure no 0x0d's
-                appear in documentation of <code>.tar.gz</code>
-                packages.  Beware to do the build from within
-                X-windows to avoid problems with StyleBook on the
-                command-line!
+            run <code>./mvnw clean verify -Pdist -Pdeprecated-dist</code>
+            to produce the source, binary, tools and deprecated binary
+            packages in the <code>target</code> directory. Run the build
+            on both Windows and Unix (or at least check the
+            <code>.tar.gz</code> packages on Unix) so that the packaged
+            documentation does not pick up stray 0x0d characters.
         </li>
-        <li>zip and tar the tools directory</li> 
         <li>
             Generate PGP/GNUPG signatures for dist binaries:<br/>
             That is, add public key to the SVN <code>KEYS</code> file if necessary

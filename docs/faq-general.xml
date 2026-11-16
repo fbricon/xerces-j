@@ -169,9 +169,10 @@ t.transform(new DOMSource(doc), new StreamResult(System.out));</source>
     distribute compressed jar files instead of our traditionally
     uncompressed files.  But if you still need a smaller jar, and
     don&apos;t need things like support for XML Schema or the WML/HTML
-    DOM implementations that Xerces provides, then look at the
-    <code>dtdjars</code> target in our
-    buildfile. 
+    DOM implementations that Xerces provides, then use the
+    <code>dtd</code> Maven profile. Building with
+    <code>./mvnw clean package -Pdtd</code> produces
+    <code>target/dtd-xercesImpl.jar</code>.
     </p>
   </a>
  </faq>
