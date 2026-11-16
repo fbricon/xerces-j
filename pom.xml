@@ -54,11 +54,10 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!--
-      The Ant build defaults javac.source/javac.target to 1.7. JDK 20 and later
-      cannot target 7 anymore, so 1.8 is the lowest language level that works on
-      a current JDK. This matches the override used by the Ant CI build
-      (-Djavac.source=1.8 -Djavac.target=1.8). On an older JDK you can still
-      target 7 with -Djavac.source=1.7 -Djavac.target=1.7.
+      The former Ant build defaulted javac.source/javac.target to 1.7. JDK 20
+      and later cannot target 7 anymore, so 1.8 is the lowest language level
+      that works on a current JDK. On an older JDK you can still target 7 with
+      -Djavac.source=1.7 -Djavac.target=1.7.
     -->
     <javac.source>1.8</javac.source>
     <javac.target>1.8</javac.target>
@@ -72,7 +71,7 @@
     <impl.name>${xerces.name} ${project.version}</impl.name>
     <impl.version>${project.version}</impl.version>
 
-    <!-- Documentation values, mirroring build.xml's init target. -->
+    <!-- Documentation values. -->
     <year>1999-2026</year>
     <copyright>Copyright &#169; ${year} The Apache Software Foundation. All Rights Reserved.</copyright>
     <default.parser.config.name>XIncludeAwareParserConfiguration</default.parser.config.name>
@@ -95,7 +94,7 @@
       <optional>true</optional>
     </dependency>
 
-    <!-- Kept at 4.10, like the Ant build, to avoid the hamcrest split. -->
+    <!-- Kept at 4.10, as before, to avoid the hamcrest split. -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -108,22 +107,19 @@
     <finalName>xercesImpl</finalName>
 
     <!--
-      The Ant build copies src/** through a filtering step (message bundle
-      duplication, @@VERSION@@ substitution in Version.java). The Maven build
-      does the same at generate-sources time; see the resources-plugin
-      executions below.
+      Standard Maven layout: src/main/java, src/main/resources, src/test/java
+      and src/test/resources. Version.java lives in src/main/java-templates and
+      is filtered into target/generated-sources by templating-maven-plugin.
+      src/main/services holds the alternative META-INF/services files used by
+      the dtd profile.
     -->
-    <sourceDirectory>${project.build.directory}/generated-sources/main</sourceDirectory>
-    <testSourceDirectory>${project.basedir}/tests</testSourceDirectory>
 
     <resources>
-      <!-- Message bundles, error resources and other classpath resources. -->
+      <!--
+        Message bundles, the .res file and META-INF/services registrations.
+      -->
       <resource>
-        <directory>${project.basedir}/src</directory>
-        <includes>
-          <include>**/*.properties</include>
-          <include>**/*.res</include>
-        </includes>
+        <directory>${project.basedir}/src/main/resources</directory>
       </resource>
 
       <!-- The _en copies generated below by maven-antrun-plugin. -->
@@ -131,57 +127,7 @@
         <directory>${project.build.directory}/generated-resources</directory>
       </resource>
 
-      <!--
-        Service registrations. In the source tree these live next to the
-        implementation classes (e.g. .../jaxp/javax.xml.parsers.DocumentBuilderFactory);
-        inside the jar they are META-INF/services entries. This is what the Ant
-        prepare-common and prepare-src targets do with explicit copies.
-      -->
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/jaxp</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>javax.xml.parsers.DocumentBuilderFactory</include>
-          <include>javax.xml.parsers.SAXParserFactory</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/jaxp/datatype</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>javax.xml.datatype.DatatypeFactory</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/jaxp/validation</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>javax.xml.validation.SchemaFactory</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/stax</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>javax.xml.stream.XMLEventFactory</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/parsers</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>org.xml.sax.driver</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/src/org/apache/xerces/dom</directory>
-        <targetPath>META-INF/services</targetPath>
-        <includes>
-          <include>org.w3c.dom.DOMImplementationSourceList</include>
-        </includes>
-      </resource>
-
-      <!-- LICENSE and NOTICE, as the Ant jar target adds them. -->
+      <!-- LICENSE and NOTICE, as the jar plugin adds them. -->
       <resource>
         <directory>${project.basedir}</directory>
         <targetPath>META-INF</targetPath>
@@ -191,15 +137,6 @@
         </includes>
       </resource>
     </resources>
-
-    <testResources>
-      <testResource>
-        <directory>${project.basedir}/tests</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
 
     <pluginManagement>
       <plugins>
@@ -253,6 +190,11 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.12.0</version>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>templating-maven-plugin</artifactId>
+          <version>1.0.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -273,38 +215,23 @@
       </plugin>
 
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>templating-maven-plugin</artifactId>
+        <executions>
+          <!-- Filter ${VERSION} into Version.java from src/main/java-templates. -->
+          <execution>
+            <id>filter-sources</id>
+            <goals>
+              <goal>filter-sources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
-          <!--
-            Copy the parser sources into the generated source tree, substituting
-            @@VERSION@@ in Version.java (the only @@ token in the tree), as Ant's
-            prepare-src target does.
-          -->
-          <execution>
-            <id>copy-java-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/generated-sources/main</outputDirectory>
-              <useDefaultDelimiters>false</useDefaultDelimiters>
-              <delimiters>
-                <delimiter>@@</delimiter>
-              </delimiters>
-              <resources>
-                <resource>
-                  <directory>${project.basedir}/src</directory>
-                  <includes>
-                    <include>org/apache/**/*.java</include>
-                  </includes>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-
           <!-- Substitute @...@ tokens in the jar manifest. -->
           <execution>
             <id>filter-manifest</id>
@@ -319,7 +246,7 @@
               </delimiters>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/src</directory>
+                  <directory>${project.basedir}/src/main/manifest</directory>
                   <includes>
                     <include>manifest.xerces</include>
                   </includes>
@@ -331,7 +258,7 @@
         </executions>
       </plugin>
 
-      <!-- Samples are compiled alongside the parser, as Ant's tests target does. -->
+      <!-- Samples are compiled alongside the parser and packaged separately. -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -354,7 +281,7 @@
       <!--
         Attach the standard -sources and -javadoc classifier artifacts so
         that install/deploy publishes a normal Maven artifact set. The
-        distribution builds use their own Ant-flavoured javadoc sets.
+        distribution builds use their own javadoc sets.
       -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -397,9 +324,9 @@
       </plugin>
 
       <!--
-        Ant creates English copies of the default (English) message bundles.
-        Maven cannot rename files while copying resources, so do those ten
-        copies here. This is the only Ant-flavoured step in the build.
+        The parser also looks up English message bundles under *_en names.
+        Maven cannot rename files while copying resources, so create those ten
+        copies here.
       -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -414,7 +341,7 @@
             <configuration>
               <target>
                 <copy todir="${project.build.directory}/generated-resources/org/apache/xerces/impl/msg">
-                  <fileset dir="${project.basedir}/src/org/apache/xerces/impl/msg">
+                  <fileset dir="${project.basedir}/src/main/resources/org/apache/xerces/impl/msg">
                     <include name="DatatypeMessages.properties"/>
                     <include name="DOMMessages.properties"/>
                     <include name="JAXPValidationMessages.properties"/>
@@ -427,7 +354,7 @@
                   </fileset>
                   <mapper type="glob" from="*.properties" to="*_en.properties"/>
                 </copy>
-                <copy file="${project.basedir}/src/org/apache/xerces/impl/xpath/regex/message.properties"
+                <copy file="${project.basedir}/src/main/resources/org/apache/xerces/impl/xpath/regex/message.properties"
                       tofile="${project.build.directory}/generated-resources/org/apache/xerces/impl/xpath/regex/message_en.properties"/>
               </target>
             </configuration>
@@ -530,7 +457,7 @@
                 <include>xinclude/*Test.java</include>
               </includes>
               <excludes>
-                <!-- Known failure, skipped by the Ant build as well. -->
+                <!-- Known failure, skipped by the previous build as well. -->
                 <exclude>schema/config/UnparsedEntityCheckingTest.java</exclude>
                 <!-- Run in a fresh JVM below, like the separate Ant junit task. -->
                 <exclude>schema/config/SurrogatePairLengthTest.java</exclude>
@@ -712,24 +639,26 @@
                   <mkdir dir="${dtd.dir}/src"/>
                   <mkdir dir="${dtd.dir}/classes/META-INF/services"/>
 
-                  <!-- The CI build runs dtdjars on top of the main source tree. -->
+                  <!-- The dtd jar is built from the main sources. -->
                   <copy todir="${dtd.dir}/src">
-                    <fileset dir="${project.build.directory}/generated-sources/main"
+                    <fileset dir="${project.basedir}/src/main/java"
+                             includes="org/apache/**/*.java"/>
+                    <fileset dir="${project.build.directory}/generated-sources/java-templates"
                              includes="org/apache/**/*.java"/>
                   </copy>
 
                   <!-- Service registrations for the DTD jar. -->
-                  <copy file="${project.basedir}/src/org/apache/xerces/jaxp/javax.xml.parsers.DocumentBuilderFactory"
+                  <copy file="${project.basedir}/src/main/resources/META-INF/services/javax.xml.parsers.DocumentBuilderFactory"
                         tofile="${dtd.dir}/classes/META-INF/services/javax.xml.parsers.DocumentBuilderFactory"/>
-                  <copy file="${project.basedir}/src/org/apache/xerces/jaxp/javax.xml.parsers.SAXParserFactory"
+                  <copy file="${project.basedir}/src/main/resources/META-INF/services/javax.xml.parsers.SAXParserFactory"
                         tofile="${dtd.dir}/classes/META-INF/services/javax.xml.parsers.SAXParserFactory"/>
-                  <copy file="${project.basedir}/src/org/apache/xerces/stax/javax.xml.stream.XMLEventFactory"
+                  <copy file="${project.basedir}/src/main/resources/META-INF/services/javax.xml.stream.XMLEventFactory"
                         tofile="${dtd.dir}/classes/META-INF/services/javax.xml.stream.XMLEventFactory"/>
-                  <copy file="${project.basedir}/src/org/apache/xerces/parsers/org.xml.sax.driver"
+                  <copy file="${project.basedir}/src/main/resources/META-INF/services/org.xml.sax.driver"
                         tofile="${dtd.dir}/classes/META-INF/services/org.xml.sax.driver"/>
-                  <copy file="${project.basedir}/src/org/apache/xerces/parsers/org.apache.xerces.xni.parser.DTDConfiguration"
+                  <copy file="${project.basedir}/src/main/services/org.apache.xerces.xni.parser.DTDConfiguration"
                         tofile="${dtd.dir}/classes/META-INF/services/org.apache.xerces.xni.parser.XMLParserConfiguration"/>
-                  <copy file="${project.basedir}/src/org/apache/xerces/dom/org.apache.xerces.dom.DOMImplementationSourceImpl"
+                  <copy file="${project.basedir}/src/main/services/org.apache.xerces.dom.DOMImplementationSourceImpl"
                         tofile="${dtd.dir}/classes/META-INF/services/org.w3c.dom.DOMImplementationSourceList"/>
 
                   <!-- Source rewrites from dtdprepare-src. -->
@@ -795,7 +724,7 @@
                   <replace file="${dtd.dir}/src/org/apache/xerces/parsers/AbstractSAXParser.java" token="return (fConfiguration instanceof XML11Configurable);" value="return false;"/>
 
                   <copy todir="${dtd.dir}/classes">
-                    <fileset dir="${project.basedir}/src" includes="**/*.res, **/*.properties"/>
+                    <fileset dir="${project.basedir}/src/main/resources" includes="**/*.res, **/*.properties"/>
                   </copy>
                   <!-- The English message bundles created by the core build. -->
                   <copy todir="${dtd.dir}/classes">
@@ -849,7 +778,7 @@
                   <mkdir dir="${dv.dir}/src"/>
                   <mkdir dir="${dv.dir}/classes"/>
                   <copy todir="${dv.dir}/src">
-                    <fileset dir="${project.basedir}/src">
+                    <fileset dir="${project.basedir}/src/main/java">
                       <include name="org/apache/xerces/impl/Constants.java"/>
                       <include name="org/apache/xerces/impl/dv/**"/>
                       <include name="org/apache/xerces/impl/msg/XMLSchema**"/>
@@ -882,7 +811,7 @@
                            token="SchemaDVFactoryImpl" value="FullDVFactory"/>
 
                   <copy todir="${dv.dir}/classes">
-                    <fileset dir="${project.basedir}/src" includes="**/*.properties"/>
+                    <fileset dir="${project.basedir}/src/main/resources" includes="**/*.properties"/>
                   </copy>
 
                   <javac srcdir="${dv.dir}/src" destdir="${dv.dir}/classes"
@@ -931,7 +860,9 @@
                   <mkdir dir="${s11.dir}/src"/>
                   <mkdir dir="${s11.dir}/classes"/>
                   <copy todir="${s11.dir}/src">
-                    <fileset dir="${project.build.directory}/generated-sources/main"
+                    <fileset dir="${project.basedir}/src/main/java"
+                             includes="org/apache/**/*.java"/>
+                    <fileset dir="${project.build.directory}/generated-sources/java-templates"
                              includes="org/apache/**/*.java"/>
                   </copy>
 
@@ -958,7 +889,7 @@
                   </replace>
 
                   <copy todir="${s11.dir}/classes">
-                    <fileset dir="${project.basedir}/src" includes="**/*.res, **/*.properties"/>
+                    <fileset dir="${project.basedir}/src/main/resources" includes="**/*.res, **/*.properties"/>
                   </copy>
                   <!-- Service registrations, LICENSE and NOTICE from the core build. -->
                   <copy todir="${s11.dir}/classes">
@@ -1208,7 +1139,9 @@
                     <property name="xerces.copyright" value="${copyright}"/>
                     <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
                     <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
-                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.java.src" value="${project.basedir}/src/main/java"/>
+                    <property name="xerces.templated.src" value="${project.build.directory}/generated-sources/java-templates"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/javadoc-src"/>
                     <property name="xerces.resolver.jar" value="${project.build.directory}/lib/resolver.jar"/>
                     <property name="xerces.serializer.jar" value="${project.build.directory}/lib/serializer.jar"/>
                   </ant>
@@ -1366,7 +1299,9 @@
                     <property name="xerces.default.parser.config.qualified" value="${default.parser.config.qualified}"/>
                     <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
                     <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
-                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.java.src" value="${project.basedir}/src/main/java"/>
+                    <property name="xerces.templated.src" value="${project.build.directory}/generated-sources/java-templates"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/javadoc-src"/>
                     <property name="xerces.classes.dir" value="${project.build.outputDirectory}"/>
                     <property name="xerces.apis.jar" value="${project.build.directory}/lib/xml-apis.jar"/>
                     <property name="xerces.samples.jar" value="${project.build.directory}/xercesImpl-samples.jar"/>
@@ -1521,7 +1456,9 @@
                     <property name="xerces.default.parser.config.qualified" value="${default.parser.config.qualified}"/>
                     <property name="xerces.tools.dir" value="${project.basedir}/tools"/>
                     <property name="xerces.apis.src.zip" value="${project.basedir}/tools/xml-commons-external-src.zip"/>
-                    <property name="xerces.gen.src" value="${project.build.directory}/generated-sources/main"/>
+                    <property name="xerces.java.src" value="${project.basedir}/src/main/java"/>
+                    <property name="xerces.templated.src" value="${project.build.directory}/generated-sources/java-templates"/>
+                    <property name="xerces.gen.src" value="${project.build.directory}/javadoc-src"/>
                     <property name="xerces.classes.dir" value="${project.build.outputDirectory}"/>
                     <property name="xerces.apis.jar" value="${project.build.directory}/lib/xml-apis.jar"/>
                     <property name="xerces.samples.jar" value="${project.build.directory}/xercesImpl-samples.jar"/>

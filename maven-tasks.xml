@@ -129,6 +129,16 @@
     </copy>
   </target>
 
+  <!-- Copy the sources so the javadoc transformations leave the tree untouched. -->
+  <target name="prepare-javadoc-src">
+    <delete dir="${xerces.gen.src}"/>
+    <mkdir dir="${xerces.gen.src}"/>
+    <copy todir="${xerces.gen.src}">
+      <fileset dir="${xerces.java.src}" includes="**/*.java, **/package.html"/>
+      <fileset dir="${xerces.templated.src}" includes="**/*.java"/>
+    </copy>
+  </target>
+
   <!-- Turn the @xerces.internal / @xerces.experimental markers into javadoc text. -->
   <target name="javadoc-replace">
     <replace token="@xerces.internal" dir="${xerces.gen.src}">
@@ -140,7 +150,7 @@
   </target>
 
   <!-- Build the API, XNI, XML Schema, implementation and other javadoc sets. -->
-  <target name="javadocs" depends="javadoc-replace">
+  <target name="javadocs" depends="prepare-javadoc-src, javadoc-replace">
     <delete dir="${xerces.build.dir}/docs/javadocs"/>
     <mkdir dir="${xerces.build.dir}/api-src"/>
     <!-- The XML, SAX and DOM API sources that the Ant build unzips. -->
@@ -271,11 +281,9 @@
     <mkdir dir="${distsrc.dir}/docs"/>
     <mkdir dir="${distsrc.dir}/samples"/>
 
-    <copy todir="${distsrc.dir}/src">
-      <fileset dir="${xerces.basedir}/src"
-               includes="org/**, dom3/**, javax/**, manifest.xerces"
-               excludes="**/CVS*, **/.#*, **/*.class
-                         **/v1/** **/v2/**"/>
+    <copy todir="${distsrc.dir}/src/main">
+      <fileset dir="${xerces.basedir}/src/main"
+               excludes="**/CVS*, **/.#*, **/*.class"/>
     </copy>
     <copy todir="${distsrc.dir}/data">
       <fileset dir="${xerces.basedir}/data" excludes="**/CVS*, **/.#*"/>

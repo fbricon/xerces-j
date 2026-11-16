@@ -59,6 +59,7 @@ The build uses the standard Maven layout:
 | `src/main/resources` | message bundles, service registrations and other resources |
 | `src/main/java-templates` | source templates filtered at build time |
 | `src/main/manifest` | jar manifest template |
+| `src/main/services` | alternative `META-INF/services` registrations used by the `dtd` profile |
 | `src/test/java` | JUnit tests |
 | `src/test/resources` | test data |
 | `samples` | sample applications, packaged as the `samples` classifier |
